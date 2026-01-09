@@ -2,6 +2,8 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Heart, Coffee, BookOpen, Music, MapPin, Calendar, Star } from "lucide-react";
+
+// Import gambar
 import heroPortrait from "@/assets/hero-potrait.jpg";
 
 const Index = () => {
@@ -34,10 +36,10 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
             <div className="container mx-auto">
-              <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-4 animate-fade-up">
-                Mengenang <span className="text-gradient">Mas Idan</span>
+              <h1 className="font-sans text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-4 animate-fade-up">
+                Niat, Berusaha, Berdoa, Tawakal, Aamiin, <span className="text-gradient">Juara!</span>
               </h1>
-              <p className="font-body text-lg md:text-xl text-foreground/80 max-w-2xl animate-fade-up" style={{ animationDelay: "0.2s" }}>
+              <p className="font-sans text-lg md:text-xl text-foreground/80 max-w-2xl animate-fade-up" style={{ animationDelay: "0.2s" }}>
                 Sebuah ruang untuk mengenang sosok yang penuh inspirasi, kebaikan, dan cinta kasih yang tak terlupakan.
               </p>
             </div>
@@ -56,7 +58,7 @@ const Index = () => {
           <div className="max-w-4xl mx-auto">
             <div className="card-gradient rounded-2xl p-6 md:p-10 shadow-warm">
               <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-                <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-warm-sepia shadow-soft flex-shrink-0">
+                <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-blue-400 shadow-soft flex-shrink-0">
                   <img
                     src={heroPortrait}
                     alt="Mas Idan"
@@ -64,10 +66,10 @@ const Index = () => {
                   />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h3 className="font-serif text-2xl md:text-3xl font-semibold text-foreground mb-4">
+                  <h3 className="font-sans text-2xl md:text-3xl font-semibold text-foreground mb-4">
                     Perkenalan
                   </h3>
-                  <p className="font-body text-foreground/85 leading-relaxed mb-6">
+                  <p className="font-sans text-foreground/85 leading-relaxed mb-6">
                     Mas Idan adalah sosok yang penuh kehangatan dan kebijaksanaan. Lahir di tanah Jawa yang subur, 
                     beliau tumbuh menjadi pribadi yang rendah hati namun penuh inspirasi. Dengan senyum yang selalu 
                     menghiasi wajahnya, Mas Idan dikenal sebagai pendengar yang baik dan teman yang setia.
@@ -99,7 +101,7 @@ const Index = () => {
             />
 
             <div className="prose prose-lg max-w-none">
-              <p className="font-body text-foreground/85 leading-relaxed text-center">
+              <p className="font-sans text-foreground/85 leading-relaxed text-center">
                 Mas Idan menyelesaikan pendidikannya di salah satu universitas terkemuka di Indonesia. 
                 Selama hidupnya, beliau mengabdikan diri untuk keluarga dan masyarakat sekitar. 
                 Dikenal sebagai sosok yang selalu siap membantu siapa saja yang membutuhkan, 
@@ -131,7 +133,7 @@ const Index = () => {
                   <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                     <Icon className="w-7 h-7 text-primary" />
                   </div>
-                  <p className="font-body text-foreground font-medium">{item.text}</p>
+                  <p className="font-sans text-foreground font-medium">{item.text}</p>
                 </div>
               );
             })}
@@ -151,7 +153,7 @@ const Index = () => {
             {dislikes.map((item, index) => (
               <span
                 key={index}
-                className="px-5 py-2.5 rounded-full bg-card border border-border text-foreground/80 font-body text-sm hover:bg-muted transition-colors"
+                className="px-5 py-2.5 rounded-full bg-card border border-border text-foreground/80 font-sans text-sm hover:bg-muted transition-colors"
               >
                 {item}
               </span>
@@ -165,10 +167,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <Star className="w-12 h-12 text-accent mx-auto mb-6 opacity-60" />
-            <blockquote className="font-serif text-2xl md:text-3xl lg:text-4xl text-foreground italic mb-6 leading-relaxed">
+            <blockquote className="font-sans text-2xl md:text-3xl lg:text-4xl text-foreground italic mb-6 leading-relaxed">
               "Kebaikan yang kita taburkan akan tumbuh menjadi kenangan indah di hati orang lain."
             </blockquote>
-            <p className="font-body text-muted-foreground">— Mas Idan</p>
+            <p className="font-sans text-muted-foreground">— Mas Idan</p>
             <Heart className="w-6 h-6 text-accent mx-auto mt-8 fill-accent opacity-60" />
           </div>
         </div>
