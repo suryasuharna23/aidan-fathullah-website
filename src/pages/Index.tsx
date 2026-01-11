@@ -168,7 +168,8 @@ const Index = () => {
           <div className="max-w-3xl mx-auto text-center">
             <Star className="w-12 h-12 text-accent mx-auto mb-6 opacity-60" />
             <blockquote className="font-sans text-2xl md:text-3xl lg:text-4xl text-foreground italic mb-6 leading-relaxed">
-              "Kebaikan yang kita taburkan akan tumbuh menjadi kenangan indah di hati orang lain."
+              "Setiap orang ada masanya, 
+              <br></br>setiap masa ada Aidannya."
             </blockquote>
             <p className="font-sans text-muted-foreground">— Mas Idan</p>
             <Heart className="w-6 h-6 text-accent mx-auto mt-8 fill-accent opacity-60" />
