@@ -4,10 +4,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export interface Story {
   id: string;
   author: string;
-  authorImage?: string;
-  storyImage?: string;
+  author_image?: string;
+  story_image?: string;
   content: string;
   date?: string;
+  created_at?: string;
 }
 
 interface StoryCardProps {
@@ -26,10 +27,10 @@ export const StoryCard = ({ story }: StoryCardProps) => {
 
   return (
     <Card className="card-gradient shadow-card hover:shadow-warm transition-all duration-500 overflow-hidden group">
-      {story.storyImage && (
+      {story.story_image && (
         <div className="aspect-video overflow-hidden">
           <img
-            src={story.storyImage}
+            src={story.story_image}
             alt="Story image"
             className="w-full h-full object-cover image-sepia group-hover:scale-105 transition-transform duration-700"
           />
@@ -38,7 +39,7 @@ export const StoryCard = ({ story }: StoryCardProps) => {
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Avatar className="w-12 h-12 border-2 border-warm-sepia">
-            <AvatarImage src={story.authorImage} alt={story.author} />
+            <AvatarImage src={story.author_image} alt={story.author} />
             <AvatarFallback className="bg-primary text-primary-foreground font-medium">
               {getInitials(story.author)}
             </AvatarFallback>
