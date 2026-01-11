@@ -3,7 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { SectionTitle } from "@/components/SectionTitle";
 import { StoryCard, Story } from "@/components/StoryCard";
-import { PenLine, Loader2, X } from "lucide-react";
+import { PenLine, Loader2, X, Upload, Image } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 const StoryPage = () => {
@@ -13,7 +13,14 @@ const StoryPage = () => {
 
   // Tambahkan state untuk form
   const [showForm, setShowForm] = useState(false);
-  const [newStory, setNewStory] = useState({ author: "", content: "" });
+  const [newStory, setNewStory] = useState({ 
+    author: "", 
+    content: "",
+    authorImageFile: null as File | null,
+    storyImageFiles: [] as File[]
+  });
+  const [authorImagePreview, setAuthorImagePreview] = useState<string | null>(null);
+  const [storyImagePreviews, setStoryImagePreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch stories dari Supabase
@@ -64,12 +71,29 @@ const StoryPage = () => {
 
     try {
       setSubmitting(true);
+
+      // Upload author image jika ada
+      let authorImageUrl: string | undefined;
+      if (newStory.authorImageFile) {
+        const url = await uploadImage(newStory.authorImageFile, 'authors');
+        if (url) authorImageUrl = url;
+      }
+
+      // Upload story images jika ada
+      const storyImageUrls: string[] = [];
+      for (const file of newStory.storyImageFiles) {
+        const url = await uploadImage(file, 'stories');
+        if (url) storyImageUrls.push(url);
+      }
+
       const { data, error } = await supabase
         .from("stories")
         .insert([
           {
             author: newStory.author,
             content: newStory.content,
+            author_image: authorImageUrl,
+            story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
           },
         ])
         .select();
@@ -90,7 +114,9 @@ const StoryPage = () => {
       }
 
       // Reset form
-      setNewStory({ author: "", content: "" });
+      setNewStory({ author: "", content: "", authorImageFile: null, storyImageFiles: [] });
+      setAuthorImagePreview(null);
+      setStoryImagePreviews([]);
       setShowForm(false);
     } catch (err) {
       console.error("Error submitting story:", err);
@@ -98,6 +124,57 @@ const StoryPage = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Handle author image
+  const handleAuthorImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewStory({ ...newStory, authorImageFile: file });
+      setAuthorImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Handle story images (multiple)
+  const handleStoryImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setNewStory({ 
+        ...newStory, 
+        storyImageFiles: [...newStory.storyImageFiles, ...files] 
+      });
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setStoryImagePreviews([...storyImagePreviews, ...newPreviews]);
+    }
+  };
+
+  // Remove story image
+  const removeStoryImage = (index: number) => {
+    const newFiles = newStory.storyImageFiles.filter((_, i) => i !== index);
+    const newPreviews = storyImagePreviews.filter((_, i) => i !== index);
+    setNewStory({ ...newStory, storyImageFiles: newFiles });
+    setStoryImagePreviews(newPreviews);
+  };
+
+  // Upload image to Supabase Storage
+  const uploadImage = async (file: File, folder: string): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    
+    const { error } = await supabase.storage
+      .from('story-images')
+      .upload(fileName, file);
+
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('story-images')
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
   };
 
   return (
@@ -176,13 +253,19 @@ const StoryPage = () => {
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-serif text-xl font-semibold">Tulis Cerita Anda</h3>
               <button
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setAuthorImagePreview(null);
+                  setStoryImagePreviews([]);
+                  setNewStory({ author: "", content: "", authorImageFile: null, storyImageFiles: [] });
+                }}
                 className="p-1 hover:bg-muted rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSubmitStory} className="p-4 space-y-4">
+              {/* Nama */}
               <div>
                 <label className="block text-sm font-medium mb-2">Nama Anda</label>
                 <input
@@ -194,6 +277,45 @@ const StoryPage = () => {
                   required
                 />
               </div>
+
+              {/* Foto Profil */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Foto Profil (opsional)</label>
+                <div className="flex items-center gap-4">
+                  {authorImagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={authorImagePreview} 
+                        alt="Preview" 
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthorImagePreview(null);
+                          setNewStory({ ...newStory, authorImageFile: null });
+                        }}
+                        className="absolute -top-1 -right-1 bg-destructive text-white rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="w-16 h-16 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer hover:bg-muted transition-colors">
+                      <Upload className="w-5 h-5 text-muted-foreground" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAuthorImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                  <span className="text-sm text-muted-foreground">Klik untuk upload foto</span>
+                </div>
+              </div>
+
+              {/* Cerita */}
               <div>
                 <label className="block text-sm font-medium mb-2">Cerita Anda</label>
                 <textarea
@@ -205,10 +327,55 @@ const StoryPage = () => {
                   required
                 />
               </div>
-              <div className="flex gap-3 justify-end">
+
+              {/* Foto Cerita (Multiple) */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Foto Kenangan (opsional)</label>
+                <div className="space-y-3">
+                  {storyImagePreviews.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {storyImagePreviews.map((preview, index) => (
+                        <div key={index} className="relative aspect-square">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeStoryImage(index)}
+                            className="absolute top-1 right-1 bg-destructive text-white rounded-full p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                    <Image className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Tambah foto kenangan</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleStoryImagesChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 justify-end pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setAuthorImagePreview(null);
+                    setStoryImagePreviews([]);
+                    setNewStory({ author: "", content: "", authorImageFile: null, storyImageFiles: [] });
+                  }}
                   className="px-4 py-2 border rounded-lg hover:bg-muted transition-colors"
                 >
                   Batal

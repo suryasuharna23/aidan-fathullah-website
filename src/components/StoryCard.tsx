@@ -5,7 +5,7 @@ export interface Story {
   id: string;
   author: string;
   author_image?: string;
-  story_image?: string;
+  story_images?: string[];
   content: string;
   date?: string;
   created_at?: string;
@@ -27,13 +27,39 @@ export const StoryCard = ({ story }: StoryCardProps) => {
 
   return (
     <Card className="card-gradient shadow-card hover:shadow-warm transition-all duration-500 overflow-hidden group">
-      {story.story_image && (
-        <div className="aspect-video overflow-hidden">
-          <img
-            src={story.story_image}
-            alt="Story image"
-            className="w-full h-full object-cover image-sepia group-hover:scale-105 transition-transform duration-700"
-          />
+      {story.story_images && story.story_images.length > 0 && (
+        <div className="relative">
+          {story.story_images.length === 1 ? (
+            <div className="aspect-video overflow-hidden">
+              <img
+                src={story.story_images[0]}
+                alt="Story image"
+                className="w-full h-full object-cover image-sepia group-hover:scale-105 transition-transform duration-700"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-1">
+              {story.story_images.slice(0, 4).map((img, index) => (
+                <div
+                  key={index}
+                  className="aspect-square overflow-hidden relative"
+                >
+                  <img
+                    src={img}
+                    alt={`Story image ${index + 1}`}
+                    className="w-full h-full object-cover image-sepia group-hover:scale-105 transition-transform duration-700"
+                  />
+                  {index === 3 && story.story_images!.length > 4 && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-white font-semibold">
+                        +{story.story_images!.length - 4}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
       <CardContent className="p-6">
