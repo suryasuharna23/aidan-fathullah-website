@@ -26,7 +26,7 @@ const Index = () => {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="relative pt-20 md:pt-24">
+      <section className="relative pt-16 md:pt-20">
         <div className="relative h-[70vh] md:h-[85vh] overflow-hidden">
           <img
             src={heroPortrait}
