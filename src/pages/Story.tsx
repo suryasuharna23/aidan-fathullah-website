@@ -3,7 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { SectionTitle } from "@/components/SectionTitle";
 import { StoryCard, Story } from "@/components/StoryCard";
-import { PenLine, Loader2, X, Upload, Image } from "lucide-react";
+import { PenLine, Loader2, X, Upload, Image, Calendar } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 const StoryPage = () => {
@@ -16,6 +16,7 @@ const StoryPage = () => {
   const [newStory, setNewStory] = useState({ 
     author: "", 
     content: "",
+    storyDate: "",
     authorImageFile: null as File | null,
     storyImageFiles: [] as File[]
   });
@@ -31,17 +32,24 @@ const StoryPage = () => {
         const { data, error } = await supabase
           .from("stories")
           .select("*")
-          .order("created_at", { ascending: false });
+          .order("story_date", { ascending: false });
 
         if (error) {
           throw error;
         }
 
-        // Format tanggal untuk display
+        // Format tanggal untuk display dan simpan story_date untuk sorting
         const formattedStories = data?.map((story) => ({
           ...story,
-          date: story.date
-            ? new Date(story.date).toLocaleDateString("id-ID", {
+          story_date: story.story_date, // Simpan untuk sorting
+          date: story.story_date
+            ? new Date(story.story_date).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })
+            : story.created_at
+            ? new Date(story.created_at).toLocaleDateString("id-ID", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
@@ -94,27 +102,43 @@ const StoryPage = () => {
             content: newStory.content,
             author_image: authorImageUrl,
             story_images: storyImageUrls.length > 0 ? storyImageUrls : null,
+            story_date: newStory.storyDate || null,
           },
         ])
         .select();
 
       if (error) throw error;
 
-      // Tambahkan ke list stories
+      // Tambahkan ke list stories dan sort berdasarkan tanggal
       if (data) {
         const formattedStory = {
           ...data[0],
-          date: new Date(data[0].date).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          }),
+          story_date: data[0].story_date,
+          date: data[0].story_date 
+            ? new Date(data[0].story_date).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })
+            : new Date(data[0].created_at).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              }),
         };
-        setStories([formattedStory, ...stories]);
+        
+        // Sort stories berdasarkan story_date (descending)
+        const updatedStories = [...stories, formattedStory].sort((a, b) => {
+          const dateA = a.story_date ? new Date(a.story_date).getTime() : 0;
+          const dateB = b.story_date ? new Date(b.story_date).getTime() : 0;
+          return dateB - dateA; // Descending (terbaru di atas)
+        });
+        
+        setStories(updatedStories);
       }
 
       // Reset form
-      setNewStory({ author: "", content: "", authorImageFile: null, storyImageFiles: [] });
+      setNewStory({ author: "", content: "", storyDate: "", authorImageFile: null, storyImageFiles: [] });
       setAuthorImagePreview(null);
       setStoryImagePreviews([]);
       setShowForm(false);
@@ -191,7 +215,7 @@ const StoryPage = () => {
         </div>
       </section>
 
-      {/* Stories Grid */}
+      {/* Stories Timeline */}
       <section className="py-12 md:py-20">
         <div className="container mx-auto px-4">
           {loading ? (
@@ -208,16 +232,46 @@ const StoryPage = () => {
               <p className="text-muted-foreground">Belum ada cerita yang dibagikan.</p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {stories.map((story, index) => (
-                <div
-                  key={story.id}
-                  className="animate-fade-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <StoryCard story={story} />
-                </div>
-              ))}
+            <div className="max-w-4xl mx-auto">
+              {/* Timeline */}
+              <div className="relative">
+                {/* Timeline Line */}
+                <div className="absolute left-4 md:left-1/2 md:-translate-x-px top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20"></div>
+                
+                {stories.map((story, index) => (
+                  <div
+                    key={story.id}
+                    className={`relative flex items-start gap-6 md:gap-12 pb-12 animate-fade-up ${
+                      index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
+                    }`}
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    {/* Timeline Dot */}
+                    <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rounded-full border-4 border-background shadow-lg z-10"></div>
+                    
+                    {/* Date Badge - Mobile */}
+                    <div className="md:hidden pl-10">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium mb-3">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {story.date || "Tanggal tidak diketahui"}
+                      </div>
+                    </div>
+                    
+                    {/* Date - Desktop */}
+                    <div className={`hidden md:flex flex-1 ${index % 2 === 0 ? 'justify-end pr-8' : 'justify-start pl-8'}`}>
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium ${index % 2 === 0 ? '' : 'flex-row-reverse'}`}>
+                        <Calendar className="w-4 h-4" />
+                        {story.date || "Tanggal tidak diketahui"}
+                      </div>
+                    </div>
+                    
+                    {/* Story Card */}
+                    <div className={`flex-1 pl-10 md:pl-0 ${index % 2 === 0 ? 'md:pl-8' : 'md:pr-8'}`}>
+                      <StoryCard story={story} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -257,7 +311,7 @@ const StoryPage = () => {
                   setShowForm(false);
                   setAuthorImagePreview(null);
                   setStoryImagePreviews([]);
-                  setNewStory({ author: "", content: "", authorImageFile: null, storyImageFiles: [] });
+                  setNewStory({ author: "", content: "", storyDate: "", authorImageFile: null, storyImageFiles: [] });
                 }}
                 className="p-1 hover:bg-muted rounded-full transition-colors"
               >
@@ -276,6 +330,22 @@ const StoryPage = () => {
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
+              </div>
+
+              {/* Tanggal Kenangan */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Tanggal Kenangan</label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="date"
+                    value={newStory.storyDate}
+                    onChange={(e) => setNewStory({ ...newStory, storyDate: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Kapan kenangan ini terjadi?</p>
               </div>
 
               {/* Foto Profil */}
@@ -374,7 +444,7 @@ const StoryPage = () => {
                     setShowForm(false);
                     setAuthorImagePreview(null);
                     setStoryImagePreviews([]);
-                    setNewStory({ author: "", content: "", authorImageFile: null, storyImageFiles: [] });
+                    setNewStory({ author: "", content: "", storyDate: "", authorImageFile: null, storyImageFiles: [] });
                   }}
                   className="px-4 py-2 border rounded-lg hover:bg-muted transition-colors"
                 >

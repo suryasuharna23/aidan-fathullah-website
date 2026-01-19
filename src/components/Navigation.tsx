@@ -1,12 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Home, Image, BookOpen, Menu, X } from "lucide-react";
+import { User, Image, Clock, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
-  { path: "/", label: "Home", icon: Home },
+  { path: "/story", label: "Story Timeline", icon: Clock },
   { path: "/gallery", label: "Gallery", icon: Image },
-  { path: "/story", label: "Story", icon: BookOpen },
+  { path: "/", label: "Profile", icon: User },
 ];
 
 export const Navigation = () => {

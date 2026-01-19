@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -15,21 +15,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   ArrowLeft,
   BookOpen,
   Trash2,
   Loader2,
-  MoreVertical,
   Eye,
   Calendar,
   User,
   Image as ImageIcon,
+  Clock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,6 +33,7 @@ interface Story {
   content: string;
   author_image?: string;
   story_images?: string[];
+  story_date?: string;
   date: string;
   created_at: string;
 }
@@ -62,7 +57,7 @@ export default function AdminStories() {
       const { data, error } = await supabase
         .from("stories")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("story_date", { ascending: false });
 
       if (error) throw error;
       setStories(data || []);
@@ -128,6 +123,26 @@ export default function AdminStories() {
     });
   };
 
+  const formatStoryDate = (story: Story) => {
+    if (story.story_date) {
+      return formatDate(story.story_date);
+    }
+    return formatDate(story.created_at);
+  };
+
+  // Group stories by year
+  const groupedStories = stories.reduce((acc, story) => {
+    const date = story.story_date || story.created_at;
+    const year = new Date(date).getFullYear().toString();
+    if (!acc[year]) {
+      acc[year] = [];
+    }
+    acc[year].push(story);
+    return acc;
+  }, {} as Record<string, Story[]>);
+
+  const sortedYears = Object.keys(groupedStories).sort((a, b) => parseInt(b) - parseInt(a));
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -165,94 +180,123 @@ export default function AdminStories() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {stories.map((story) => (
-              <Card key={story.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    {/* Author Image */}
-                    <div className="flex-shrink-0">
-                      {story.author_image ? (
-                        <img
-                          src={story.author_image}
-                          alt={story.author}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                          <User className="w-6 h-6 text-primary" />
-                        </div>
-                      )}
-                    </div>
+          <div className="max-w-4xl mx-auto">
+            {/* Timeline View */}
+            {sortedYears.map((year) => (
+              <div key={year} className="mb-8">
+                {/* Year Header */}
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="h-px flex-1 bg-border"></div>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span className="font-semibold text-primary">{year}</span>
+                  </div>
+                  <div className="h-px flex-1 bg-border"></div>
+                </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="font-medium">{story.author}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDate(story.created_at)}</span>
-                            {story.story_images && story.story_images.length > 0 && (
-                              <>
-                                <span>•</span>
-                                <ImageIcon className="w-3 h-3" />
-                                <span>{story.story_images.length} foto</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                {/* Timeline Items */}
+                <div className="relative">
+                  {/* Timeline Line */}
+                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent"></div>
 
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openViewDialog(story)}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              Lihat Detail
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => openDeleteDialog(story)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Hapus
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {groupedStories[year].map((story, index) => (
+                    <div key={story.id} className="relative pl-16 pb-8">
+                      {/* Timeline Dot */}
+                      <div className="absolute left-4 top-2 w-4 h-4 bg-primary rounded-full border-4 border-background shadow-lg"></div>
+                      
+                      {/* Date Badge */}
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full text-sm text-muted-foreground mb-3">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {formatStoryDate(story)}
                       </div>
 
-                      <p className="mt-3 text-foreground/80 line-clamp-3">
-                        {story.content}
-                      </p>
-
-                      {/* Story Images Preview */}
-                      {story.story_images && story.story_images.length > 0 && (
-                        <div className="mt-3 flex gap-2 overflow-x-auto">
-                          {story.story_images.slice(0, 3).map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt={`Story image ${idx + 1}`}
-                              className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                            />
-                          ))}
-                          {story.story_images.length > 3 && (
-                            <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                              <span className="text-sm text-muted-foreground">
-                                +{story.story_images.length - 3}
-                              </span>
+                      {/* Story Card */}
+                      <Card>
+                        <CardContent className="p-6">
+                          <div className="flex items-start gap-4">
+                            {/* Author Image */}
+                            <div className="flex-shrink-0">
+                              {story.author_image ? (
+                                <img
+                                  src={story.author_image}
+                                  alt={story.author}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <User className="w-6 h-6 text-primary" />
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )}
+
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <h3 className="font-medium">{story.author}</h3>
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                    {story.story_images && story.story_images.length > 0 && (
+                                      <>
+                                        <ImageIcon className="w-3 h-3" />
+                                        <span>{story.story_images.length} foto</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openViewDialog(story)}
+                                  >
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Lihat
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => openDeleteDialog(story)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Hapus
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <p className="mt-3 text-foreground/80 line-clamp-3">
+                                {story.content}
+                              </p>
+
+                              {/* Story Images Preview */}
+                              {story.story_images && story.story_images.length > 0 && (
+                                <div className="mt-3 flex gap-2 overflow-x-auto">
+                                  {story.story_images.slice(0, 3).map((img, idx) => (
+                                    <img
+                                      key={idx}
+                                      src={img}
+                                      alt={`Story image ${idx + 1}`}
+                                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                                    />
+                                  ))}
+                                  {story.story_images.length > 3 && (
+                                    <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                                      <span className="text-sm text-muted-foreground">
+                                        +{story.story_images.length - 3}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
