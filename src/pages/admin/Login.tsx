@@ -37,10 +37,22 @@ export default function AdminLogin() {
     try {
       const { error } = await signIn(email, password);
 
+      console.log("Login result:", { error });
+
       if (error) {
+        let errorMessage = "Email atau password salah";
+        
+        if (error.message?.includes("Invalid login credentials")) {
+          errorMessage = "Email atau password salah. Pastikan Anda sudah terdaftar.";
+        } else if (error.message?.includes("Email not confirmed")) {
+          errorMessage = "Email belum dikonfirmasi. Silakan cek inbox email Anda.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
         toast({
           title: "Login Gagal",
-          description: error.message || "Email atau password salah",
+          description: errorMessage,
           variant: "destructive",
         });
       } else {
@@ -50,10 +62,11 @@ export default function AdminLogin() {
         });
         navigate(from, { replace: true });
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Error",
-        description: "Terjadi kesalahan. Silakan coba lagi.",
+        description: error?.message || "Terjadi kesalahan. Silakan coba lagi.",
         variant: "destructive",
       });
     } finally {
@@ -123,7 +136,13 @@ export default function AdminLogin() {
               )}
             </Button>
           </form>
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Belum punya akun?{" "}
+              <a href="/admin/register" className="text-primary hover:underline font-medium">
+                Daftar di sini
+              </a>
+            </p>
             <a href="/" className="text-sm text-muted-foreground hover:text-primary">
               ← Kembali ke Website
             </a>

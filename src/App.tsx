@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 
 // Admin pages
 import AdminLogin from "./pages/admin/Login";
+import AdminRegister from "./pages/admin/Register";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminPhotos from "./pages/admin/Photos";
 import AdminVideos from "./pages/admin/Videos";
@@ -34,6 +35,7 @@ const App = () => (
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/register" element={<AdminRegister />} />
             <Route
               path="/admin"
               element={

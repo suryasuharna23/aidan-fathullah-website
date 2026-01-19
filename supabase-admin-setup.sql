@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.admins (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
+    name TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     UNIQUE(user_id),
     UNIQUE(email)
@@ -16,13 +17,15 @@ CREATE TABLE IF NOT EXISTS public.admins (
 -- 2. Enable Row Level Security (RLS) untuk tabel admins
 ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
 
--- 3. Policy: Hanya admin yang bisa melihat daftar admin
-CREATE POLICY "Admins can view admin list" ON public.admins
-    FOR SELECT USING (
-        auth.uid() IN (SELECT user_id FROM public.admins)
-    );
+-- 3. Policy: Siapa saja bisa melihat admin (untuk check saat register)
+CREATE POLICY "Anyone can view admin list" ON public.admins
+    FOR SELECT USING (true);
 
--- 4. Buat storage bucket untuk media (jika belum ada)
+-- 4. Policy: Siapa saja bisa insert admin baru (untuk registrasi)
+CREATE POLICY "Anyone can insert admin" ON public.admins
+    FOR INSERT WITH CHECK (true);
+
+-- 5. Buat storage bucket untuk media (jika belum ada)
 -- Pergi ke Storage di Supabase Dashboard dan buat bucket bernama "media"
 -- Atau jalankan:
 INSERT INTO storage.buckets (id, name, public)

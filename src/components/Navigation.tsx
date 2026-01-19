@@ -20,7 +20,7 @@ export const Navigation = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <span className="font-serif text-xl md:text-2xl font-semibold text-foreground">
-              Mengenang <span className="text-primary">Mas Idan</span>
+              ARKUN<span className="text-primary">.CO</span>
             </span>
           </Link>
 
