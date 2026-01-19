@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 export interface Story {
-  id: string;
+  id: string | number;
   author: string;
-  author_image?: string;
-  story_images?: string[];
   content: string;
   date?: string;
+  story_date?: string;
+  author_image?: string;
+  story_images?: string[];
   created_at?: string;
 }
 
@@ -49,8 +50,28 @@ export const StoryCard = ({ story }: StoryCardProps) => {
     setCurrentImageIndex(index);
   };
 
+  // Format story_date untuk display
+  const formatStoryDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   return (
     <Card className="card-gradient shadow-card hover:shadow-warm transition-all duration-500 overflow-hidden group">
+      {/* Story Date Banner - Full Width Persegi Panjang */}
+      {story.story_date && (
+        <div className="w-full bg-gradient-to-r from-primary/90 to-primary text-primary-foreground px-6 py-2 flex items-center justify-center gap-3">
+          <Calendar className="w-5 h-5" />
+          <span className="font-medium text-base tracking-wide">
+            {formatStoryDate(story.story_date)}
+          </span>
+        </div>
+      )}
+
       {story.story_images && story.story_images.length > 0 && (
         <div className="relative aspect-video overflow-hidden">
           {/* Image */}
@@ -123,7 +144,7 @@ export const StoryCard = ({ story }: StoryCardProps) => {
             <h4 className="font-serif font-semibold text-foreground">
               {story.author}
             </h4>
-            {story.date && (
+            {story.date && !story.story_date && (
               <p className="text-sm text-muted-foreground">{story.date}</p>
             )}
           </div>

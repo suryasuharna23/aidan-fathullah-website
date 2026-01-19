@@ -232,45 +232,109 @@ const StoryPage = () => {
               <p className="text-muted-foreground">Belum ada cerita yang dibagikan.</p>
             </div>
           ) : (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-6xl mx-auto">
               {/* Timeline */}
               <div className="relative">
-                {/* Timeline Line */}
-                <div className="absolute left-4 md:left-1/2 md:-translate-x-px top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20"></div>
+                {/* Timeline Line - Always Center */}
+                <div className="absolute left-1/2 -translate-x-px top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20"></div>
                 
-                {stories.map((story, index) => (
+                {stories.map((story, index) => {
+                  // Parse date untuk display yang lebih besar
+                  const storyDate = story.story_date ? new Date(story.story_date) : null;
+                  const day = storyDate ? storyDate.getDate() : null;
+                  const month = storyDate ? storyDate.toLocaleDateString('id-ID', { month: 'short' }) : null;
+                  const year = storyDate ? storyDate.getFullYear() : null;
+                  
+                  return (
                   <div
                     key={story.id}
-                    className={`relative flex items-start gap-6 md:gap-12 pb-12 animate-fade-up ${
-                      index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
+                    className={`relative flex items-stretch pb-16 animate-fade-up ${
+                      index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'
                     }`}
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    {/* Timeline Dot */}
-                    <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-4 h-4 bg-primary rounded-full border-4 border-background shadow-lg z-10"></div>
-                    
-                    {/* Date Badge - Mobile */}
-                    <div className="md:hidden pl-10">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium mb-3">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {story.date || "Tanggal tidak diketahui"}
-                      </div>
+                    {/* Timeline Date Badge - Center */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 z-10">
+                      {storyDate ? (
+                        <div className="bg-primary text-primary-foreground rounded-xl px-4 py-2 shadow-lg text-center min-w-[80px]">
+                          <div className="text-2xl font-bold leading-none">{day}</div>
+                          <div className="text-xs uppercase tracking-wide mt-1">{month}</div>
+                          <div className="text-xs opacity-80">{year}</div>
+                        </div>
+                      ) : (
+                        <div className="bg-muted text-muted-foreground rounded-xl px-4 py-2 shadow-lg text-center">
+                          <Calendar className="w-5 h-5 mx-auto mb-1" />
+                          <div className="text-xs">Tanggal<br/>tidak diketahui</div>
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Date - Desktop */}
-                    <div className={`hidden md:flex flex-1 ${index % 2 === 0 ? 'justify-end pr-8' : 'justify-start pl-8'}`}>
-                      <div className={`inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium ${index % 2 === 0 ? '' : 'flex-row-reverse'}`}>
-                        <Calendar className="w-4 h-4" />
-                        {story.date || "Tanggal tidak diketahui"}
-                      </div>
+                    {/* Image Side */}
+                    <div className={`w-1/2 ${index % 2 === 0 ? 'pr-8' : 'pl-8'} pt-20`}>
+                      {story.story_images && story.story_images.length > 0 ? (
+                        <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-lg group">
+                          <img
+                            src={story.story_images[0]}
+                            alt={`Foto kenangan dari ${story.author}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          />
+                          {story.story_images.length > 1 && (
+                            <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                              +{story.story_images.length - 1} foto lainnya
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="aspect-[4/3] rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-3xl font-serif text-primary">
+                                {story.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">Tidak ada foto</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Story Card */}
-                    <div className={`flex-1 pl-10 md:pl-0 ${index % 2 === 0 ? 'md:pl-8' : 'md:pr-8'}`}>
-                      <StoryCard story={story} />
+                    {/* Content Side - Nama, Cerita */}
+                    <div className={`w-1/2 ${index % 2 === 0 ? 'pl-8' : 'pr-8'} pt-20`}>
+                      <div className="bg-card rounded-xl p-6 shadow-lg border h-full">
+                        {/* Author Info */}
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+                            {story.author_image ? (
+                              <img src={story.author_image} alt={story.author} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-lg font-serif text-primary">
+                                {story.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-serif font-semibold text-foreground text-lg">
+                              {story.author}
+                            </h4>
+                          </div>
+                        </div>
+                        
+                        {/* Story Content */}
+                        <p className="font-body text-foreground/90 leading-relaxed line-clamp-6">
+                          {story.content}
+                        </p>
+                        
+                        {/* Read More if content is long */}
+                        {story.content.length > 300 && (
+                          <button className="mt-3 text-sm text-primary hover:underline font-medium">
+                            Baca selengkapnya...
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
