@@ -3,6 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { SectionTitle } from "@/components/SectionTitle";
 import { StoryCard, Story } from "@/components/StoryCard";
+import { StoryDetailModal } from "@/components/StoryDetailModal";
 import { PenLine, Loader2, X, Upload, Image, Calendar } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -10,6 +11,7 @@ const StoryPage = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
 
   // Tambahkan state untuk form
   const [showForm, setShowForm] = useState(false);
@@ -269,8 +271,11 @@ const StoryPage = () => {
                       )}
                     </div>
                     
-                    {/* Image Side */}
-                    <div className={`w-1/2 ${index % 2 === 0 ? 'pr-8' : 'pl-8'} pt-20`}>
+                    {/* Image Side - Clickable */}
+                    <div 
+                      className={`w-1/2 ${index % 2 === 0 ? 'pr-8' : 'pl-8'} pt-20 cursor-pointer`}
+                      onClick={() => setSelectedStory(story)}
+                    >
                       {story.story_images && story.story_images.length > 0 ? (
                         <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-lg group">
                           <img
@@ -278,6 +283,11 @@ const StoryPage = () => {
                             alt={`Foto kenangan dari ${story.author}`}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                           />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                              Lihat Detail
+                            </span>
+                          </div>
                           {story.story_images.length > 1 && (
                             <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
                               +{story.story_images.length - 1} foto lainnya
@@ -285,22 +295,25 @@ const StoryPage = () => {
                           )}
                         </div>
                       ) : (
-                        <div className="aspect-[4/3] rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        <div className="aspect-[4/3] rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group hover:from-primary/30 hover:to-primary/10 transition-colors">
                           <div className="text-center">
                             <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
                               <span className="text-3xl font-serif text-primary">
                                 {story.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                               </span>
                             </div>
-                            <p className="text-sm text-muted-foreground">Tidak ada foto</p>
+                            <p className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Klik untuk detail</p>
                           </div>
                         </div>
                       )}
                     </div>
                     
-                    {/* Content Side - Nama, Cerita */}
-                    <div className={`w-1/2 ${index % 2 === 0 ? 'pl-8' : 'pr-8'} pt-20`}>
-                      <div className="bg-card rounded-xl p-6 shadow-lg border h-full">
+                    {/* Content Side - Nama, Cerita - Clickable */}
+                    <div 
+                      className={`w-1/2 ${index % 2 === 0 ? 'pl-8' : 'pr-8'} pt-20 cursor-pointer`}
+                      onClick={() => setSelectedStory(story)}
+                    >
+                      <div className="bg-card rounded-xl p-6 shadow-lg border h-full hover:shadow-xl transition-shadow">
                         {/* Author Info */}
                         <div className="flex items-center gap-3 mb-4">
                           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20">
@@ -324,12 +337,10 @@ const StoryPage = () => {
                           {story.content}
                         </p>
                         
-                        {/* Read More if content is long */}
-                        {story.content.length > 300 && (
-                          <button className="mt-3 text-sm text-primary hover:underline font-medium">
-                            Baca selengkapnya...
-                          </button>
-                        )}
+                        {/* Read More */}
+                        <button className="mt-3 text-sm text-primary hover:underline font-medium">
+                          Baca selengkapnya & komentar...
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -526,6 +537,15 @@ const StoryPage = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Story Detail Modal */}
+      {selectedStory && (
+        <StoryDetailModal
+          story={selectedStory}
+          isOpen={!!selectedStory}
+          onClose={() => setSelectedStory(null)}
+        />
       )}
 
       <Footer />
