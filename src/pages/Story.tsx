@@ -4,14 +4,20 @@ import { Footer } from "@/components/Footer";
 import { SectionTitle } from "@/components/SectionTitle";
 import { StoryCard, Story } from "@/components/StoryCard";
 import { StoryDetailModal } from "@/components/StoryDetailModal";
-import { PenLine, Loader2, X, Upload, Image, Calendar } from "lucide-react";
+import { PenLine, Loader2, X, Upload, Image, Calendar, Heart, MessageCircle, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
+// Extend Story type untuk include counts
+interface StoryWithCounts extends Story {
+  likes_count?: number;
+  comments_count?: number;
+}
+
 const StoryPage = () => {
-  const [stories, setStories] = useState<Story[]>([]);
+  const [stories, setStories] = useState<StoryWithCounts[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [selectedStory, setSelectedStory] = useState<StoryWithCounts | null>(null);
 
   // Tambahkan state untuk form
   const [showForm, setShowForm] = useState(false);
@@ -43,7 +49,7 @@ const StoryPage = () => {
         // Format tanggal untuk display dan simpan story_date untuk sorting
         const formattedStories = data?.map((story) => ({
           ...story,
-          story_date: story.story_date, // Simpan untuk sorting
+          story_date: story.story_date,
           date: story.story_date
             ? new Date(story.story_date).toLocaleDateString("id-ID", {
                 day: "numeric",
@@ -59,7 +65,29 @@ const StoryPage = () => {
             : undefined,
         })) || [];
 
-        setStories(formattedStories);
+        // Fetch likes dan comments counts untuk setiap story
+        const storiesWithCounts = await Promise.all(
+          formattedStories.map(async (story) => {
+            const [likesResult, commentsResult] = await Promise.all([
+              supabase
+                .from("story_likes")
+                .select("*", { count: "exact", head: true })
+                .eq("story_id", story.id),
+              supabase
+                .from("story_comments")
+                .select("*", { count: "exact", head: true })
+                .eq("story_id", story.id),
+            ]);
+
+            return {
+              ...story,
+              likes_count: likesResult.count || 0,
+              comments_count: commentsResult.count || 0,
+            };
+          })
+        );
+
+        setStories(storiesWithCounts);
       } catch (err) {
         console.error("Error fetching stories:", err);
         setError("Gagal memuat cerita. Silakan coba lagi.");
@@ -70,6 +98,36 @@ const StoryPage = () => {
 
     fetchStories();
   }, []);
+
+  // Refresh counts setelah modal ditutup
+  const handleCloseModal = async () => {
+    if (selectedStory) {
+      // Update counts untuk story yang baru saja dilihat
+      const [likesResult, commentsResult] = await Promise.all([
+        supabase
+          .from("story_likes")
+          .select("*", { count: "exact", head: true })
+          .eq("story_id", selectedStory.id),
+        supabase
+          .from("story_comments")
+          .select("*", { count: "exact", head: true })
+          .eq("story_id", selectedStory.id),
+      ]);
+
+      setStories((prevStories) =>
+        prevStories.map((s) =>
+          s.id === selectedStory.id
+            ? {
+                ...s,
+                likes_count: likesResult.count || 0,
+                comments_count: commentsResult.count || 0,
+              }
+            : s
+        )
+      );
+    }
+    setSelectedStory(null);
+  };
 
   // Fungsi untuk submit cerita baru
   const handleSubmitStory = async (e: React.FormEvent) => {
@@ -113,7 +171,7 @@ const StoryPage = () => {
 
       // Tambahkan ke list stories dan sort berdasarkan tanggal
       if (data) {
-        const formattedStory = {
+        const formattedStory: StoryWithCounts = {
           ...data[0],
           story_date: data[0].story_date,
           date: data[0].story_date 
@@ -127,13 +185,15 @@ const StoryPage = () => {
                 month: "long",
                 year: "numeric",
               }),
+          likes_count: 0,
+          comments_count: 0,
         };
         
         // Sort stories berdasarkan story_date (descending)
         const updatedStories = [...stories, formattedStory].sort((a, b) => {
           const dateA = a.story_date ? new Date(a.story_date).getTime() : 0;
           const dateB = b.story_date ? new Date(b.story_date).getTime() : 0;
-          return dateB - dateA; // Descending (terbaru di atas)
+          return dateB - dateA;
         });
         
         setStories(updatedStories);
@@ -337,10 +397,23 @@ const StoryPage = () => {
                           {story.content}
                         </p>
                         
-                        {/* Read More */}
-                        <button className="mt-3 text-sm text-primary hover:underline font-medium">
-                          Baca selengkapnya & komentar...
-                        </button>
+                        {/* Action Icons with Counts */}
+                        <div className="mt-4 pt-3 border-t flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors">
+                              <Heart className="w-5 h-5" />
+                              <span className="text-sm font-medium">{story.likes_count || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
+                              <MessageCircle className="w-5 h-5" />
+                              <span className="text-sm font-medium">{story.comments_count || 0}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 text-primary text-sm font-medium">
+                            <span>Detail</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -544,7 +617,7 @@ const StoryPage = () => {
         <StoryDetailModal
           story={selectedStory}
           isOpen={!!selectedStory}
-          onClose={() => setSelectedStory(null)}
+          onClose={handleCloseModal}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Heart, Send, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { X, Heart, Send, ChevronLeft, ChevronRight, Loader2, MessageCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 interface Comment {
@@ -35,79 +35,6 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
   const [submittingComment, setSubmittingComment] = useState(false);
   const [likingInProgress, setLikingInProgress] = useState(false);
 
-  // Fetch likes dan comments saat modal dibuka
-  useEffect(() => {
-    if (isOpen) {
-      fetchLikes();
-      fetchComments();
-      checkIfLiked();
-    }
-  }, [isOpen, story.id]);
-
-  // Fetch jumlah likes
-  const fetchLikes = async () => {
-    const { count } = await supabase
-      .from("story_likes")
-      .select("*", { count: "exact", head: true })
-      .eq("story_id", story.id);
-    
-    setLikes(count || 0);
-  };
-
-  // Check apakah user sudah like (berdasarkan localStorage)
-  const checkIfLiked = () => {
-    const likedStories = JSON.parse(localStorage.getItem("likedStories") || "[]");
-    setIsLiked(likedStories.includes(story.id));
-  };
-
-  // Fetch comments
-  const fetchComments = async () => {
-    setLoadingComments(true);
-    const { data, error } = await supabase
-      .from("story_comments")
-      .select("*")
-      .eq("story_id", story.id)
-      .order("created_at", { ascending: true });
-
-    if (!error && data) {
-      setComments(data);
-    }
-    setLoadingComments(false);
-  };
-
-  // Handle like
-  const handleLike = async () => {
-    if (likingInProgress) return;
-    
-    setLikingInProgress(true);
-    const likedStories = JSON.parse(localStorage.getItem("likedStories") || "[]");
-
-    if (isLiked) {
-      // Unlike
-      await supabase
-        .from("story_likes")
-        .delete()
-        .eq("story_id", story.id)
-        .eq("user_identifier", getDeviceId());
-
-      const newLikedStories = likedStories.filter((id: string | number) => id !== story.id);
-      localStorage.setItem("likedStories", JSON.stringify(newLikedStories));
-      setIsLiked(false);
-      setLikes((prev) => Math.max(0, prev - 1));
-    } else {
-      // Like
-      await supabase
-        .from("story_likes")
-        .insert([{ story_id: story.id, user_identifier: getDeviceId() }]);
-
-      likedStories.push(story.id);
-      localStorage.setItem("likedStories", JSON.stringify(likedStories));
-      setIsLiked(true);
-      setLikes((prev) => prev + 1);
-    }
-    setLikingInProgress(false);
-  };
-
   // Generate device ID untuk tracking likes
   const getDeviceId = () => {
     let deviceId = localStorage.getItem("deviceId");
@@ -118,26 +45,128 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
     return deviceId;
   };
 
+  // Fetch likes dan comments saat modal dibuka
+  useEffect(() => {
+    if (isOpen) {
+      fetchLikes();
+      fetchComments();
+      checkIfLiked();
+      setCurrentImageIndex(0);
+    }
+  }, [isOpen, story.id]);
+
+  // Fetch jumlah likes
+  const fetchLikes = async () => {
+    try {
+      const { count } = await supabase
+        .from("story_likes")
+        .select("*", { count: "exact", head: true })
+        .eq("story_id", story.id);
+      
+      setLikes(count || 0);
+    } catch (err) {
+      console.error("Error fetching likes:", err);
+    }
+  };
+
+  // Check apakah user sudah like (berdasarkan localStorage)
+  const checkIfLiked = () => {
+    const likedStories = JSON.parse(localStorage.getItem("likedStories") || "[]");
+    setIsLiked(likedStories.includes(String(story.id)));
+  };
+
+  // Fetch comments
+  const fetchComments = async () => {
+    setLoadingComments(true);
+    try {
+      const { data, error } = await supabase
+        .from("story_comments")
+        .select("*")
+        .eq("story_id", story.id)
+        .order("created_at", { ascending: true });
+
+      if (!error && data) {
+        setComments(data);
+      }
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+    }
+    setLoadingComments(false);
+  };
+
+  // Handle like
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (likingInProgress) return;
+    
+    setLikingInProgress(true);
+    const deviceId = getDeviceId();
+    const likedStories = JSON.parse(localStorage.getItem("likedStories") || "[]");
+    const storyIdStr = String(story.id);
+
+    try {
+      if (isLiked) {
+        // Unlike - hapus dari database
+        const { error } = await supabase
+          .from("story_likes")
+          .delete()
+          .eq("story_id", story.id)
+          .eq("user_identifier", deviceId);
+
+        if (!error) {
+          // Update localStorage
+          const newLikedStories = likedStories.filter((id: string) => id !== storyIdStr);
+          localStorage.setItem("likedStories", JSON.stringify(newLikedStories));
+          setIsLiked(false);
+          setLikes((prev) => Math.max(0, prev - 1));
+        }
+      } else {
+        // Like - tambah ke database
+        const { error } = await supabase
+          .from("story_likes")
+          .insert([{ story_id: story.id, user_identifier: deviceId }]);
+
+        if (!error) {
+          // Update localStorage
+          likedStories.push(storyIdStr);
+          localStorage.setItem("likedStories", JSON.stringify(likedStories));
+          setIsLiked(true);
+          setLikes((prev) => prev + 1);
+        }
+      }
+    } catch (err) {
+      console.error("Error toggling like:", err);
+    }
+    
+    setLikingInProgress(false);
+  };
+
   // Submit comment
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.author.trim() || !newComment.content.trim()) return;
 
     setSubmittingComment(true);
-    const { data, error } = await supabase
-      .from("story_comments")
-      .insert([
-        {
-          story_id: story.id,
-          author: newComment.author,
-          content: newComment.content,
-        },
-      ])
-      .select();
+    try {
+      const { data, error } = await supabase
+        .from("story_comments")
+        .insert([
+          {
+            story_id: story.id,
+            author: newComment.author,
+            content: newComment.content,
+          },
+        ])
+        .select();
 
-    if (!error && data) {
-      setComments([...comments, data[0]]);
-      setNewComment({ author: "", content: "" });
+      if (!error && data) {
+        setComments([...comments, data[0]]);
+        setNewComment({ author: "", content: "" });
+      }
+    } catch (err) {
+      console.error("Error submitting comment:", err);
     }
     setSubmittingComment(false);
   };
@@ -173,8 +202,14 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row">
+    <div 
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-background rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Left Side - Images */}
         <div className="md:w-1/2 bg-black relative">
           {story.story_images && story.story_images.length > 0 ? (
@@ -274,27 +309,38 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
             </p>
           </div>
 
-          {/* Like Button */}
-          <div className="flex items-center gap-4 p-4 border-b">
+          {/* Like & Comment Count */}
+          <div className="flex items-center gap-6 p-4 border-b">
+            {/* Like Button */}
             <button
+              type="button"
               onClick={handleLike}
               disabled={likingInProgress}
-              className={`flex items-center gap-2 transition-colors ${
-                isLiked ? "text-red-500" : "text-muted-foreground hover:text-red-500"
-              }`}
+              className={`flex items-center gap-2 transition-all duration-200 ${
+                isLiked 
+                  ? "text-red-500" 
+                  : "text-muted-foreground hover:text-red-500"
+              } ${likingInProgress ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             >
-              <Heart className={`w-6 h-6 ${isLiked ? "fill-current" : ""}`} />
+              <Heart 
+                className={`w-6 h-6 transition-transform duration-200 ${
+                  isLiked ? "fill-current scale-110" : "hover:scale-110"
+                }`} 
+              />
               <span className="font-medium">{likes}</span>
             </button>
-            <span className="text-sm text-muted-foreground">
-              {likes} orang menyukai cerita ini
-            </span>
+            
+            {/* Comment Count */}
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MessageCircle className="w-6 h-6" />
+              <span className="font-medium">{comments.length}</span>
+            </div>
           </div>
 
           {/* Comments Section */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <h5 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Komentar ({comments.length})
+              Komentar
             </h5>
             
             {loadingComments ? (
@@ -335,7 +381,7 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
                 value={newComment.author}
                 onChange={(e) => setNewComment({ ...newComment, author: e.target.value })}
                 placeholder="Nama Anda"
-                className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                 required
               />
               <div className="flex gap-2">
@@ -344,7 +390,7 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
                   value={newComment.content}
                   onChange={(e) => setNewComment({ ...newComment, content: e.target.value })}
                   placeholder="Tulis komentar..."
-                  className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                   required
                 />
                 <button
