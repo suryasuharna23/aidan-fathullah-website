@@ -5,16 +5,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+
+// Public pages
 import Home from "./pages/Home";
-import Index from "./pages/Index";
-import Gallery from "./pages/Gallery";
-import Story from "./pages/Story";
+import Explore from "./pages/Explore";
 import NotFound from "./pages/NotFound";
+
+// Memorial pages (dynamic by slug)
+import MemorialProfile from "./pages/memorial/Profile";
+import MemorialGallery from "./pages/memorial/Gallery";
+import MemorialStory from "./pages/memorial/Story";
 
 // Admin pages
 import AdminLogin from "./pages/admin/Login";
 import AdminRegister from "./pages/admin/Register";
 import AdminDashboard from "./pages/admin/Dashboard";
+import AdminMemorials from "./pages/admin/Memorials";
 import AdminPhotos from "./pages/admin/Photos";
 import AdminVideos from "./pages/admin/Videos";
 import AdminStories from "./pages/admin/Stories";
@@ -31,9 +37,12 @@ const App = () => (
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
-            <Route path="/profile" element={<Index />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/story" element={<Story />} />
+            <Route path="/explore" element={<Explore />} />
+
+            {/* Memorial Routes (dynamic by slug) */}
+            <Route path="/memorial/:slug" element={<MemorialProfile />} />
+            <Route path="/memorial/:slug/gallery" element={<MemorialGallery />} />
+            <Route path="/memorial/:slug/story" element={<MemorialStory />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -43,6 +52,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/memorials"
+              element={
+                <ProtectedRoute>
+                  <AdminMemorials />
                 </ProtectedRoute>
               }
             />

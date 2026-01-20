@@ -16,18 +16,35 @@ import {
   Image,
   Video,
   BookOpen,
-  Home,
   LogOut,
   User,
   Settings,
-  BarChart3,
   Plus,
   Eye,
   Loader2,
+  Users,
+  ArrowRight,
+  Calendar,
+  MapPin,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface Memorial {
+  id: string;
+  slug: string;
+  name: string;
+  birth_date: string | null;
+  death_date: string | null;
+  birth_place: string | null;
+  bio: string | null;
+  profile_image: string | null;
+  cover_image: string | null;
+  is_public: boolean;
+  created_at: string;
+}
+
 interface Stats {
+  memorials: number;
   photos: number;
   videos: number;
   stories: number;
@@ -37,24 +54,30 @@ export default function AdminDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [stats, setStats] = useState<Stats>({ photos: 0, videos: 0, stories: 0 });
+  const [stats, setStats] = useState<Stats>({ memorials: 0, photos: 0, videos: 0, stories: 0 });
+  const [memorials, setMemorials] = useState<Memorial[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+    fetchMemorials();
+  }, [user]);
 
   const fetchStats = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       
-      const [photosRes, videosRes, storiesRes] = await Promise.all([
+      const [memorialsRes, photosRes, videosRes, storiesRes] = await Promise.all([
+        supabase.from("memorials").select("id", { count: "exact", head: true }).eq("admin_id", user.id),
         supabase.from("photos").select("id", { count: "exact", head: true }),
         supabase.from("videos").select("id", { count: "exact", head: true }),
         supabase.from("stories").select("id", { count: "exact", head: true }),
       ]);
 
       setStats({
+        memorials: memorialsRes.count || 0,
         photos: photosRes.count || 0,
         videos: videosRes.count || 0,
         stories: storiesRes.count || 0,
@@ -63,6 +86,24 @@ export default function AdminDashboard() {
       console.error("Error fetching stats:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMemorials = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("memorials")
+        .select("*")
+        .eq("admin_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+      setMemorials(data || []);
+    } catch (error) {
+      console.error("Error fetching memorials:", error);
     }
   };
 
@@ -76,6 +117,14 @@ export default function AdminDashboard() {
   };
 
   const menuItems = [
+    {
+      title: "Kelola Memorial",
+      description: "Buat dan kelola memorial orang tersayang",
+      icon: Users,
+      href: "/admin/memorials",
+      count: stats.memorials,
+      color: "bg-primary/10 text-primary",
+    },
     {
       title: "Kelola Foto",
       description: "Tambah, edit, dan hapus foto galeri",
@@ -158,14 +207,14 @@ export default function AdminDashboard() {
             Selamat Datang, Admin! 👋
           </h1>
           <p className="text-muted-foreground">
-            Kelola konten website memorial Mas Idan dari sini.
+            Kelola memorial orang-orang tersayang dari sini.
           </p>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid gap-4 md:grid-cols-3 mb-8">
+        <div className="grid gap-4 md:grid-cols-4 mb-8">
           {loading ? (
-            Array.from({ length: 3 }).map((_, i) => (
+            Array.from({ length: 4 }).map((_, i) => (
               <Card key={i}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-center h-20">
@@ -176,6 +225,19 @@ export default function AdminDashboard() {
             ))
           ) : (
             <>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Memorial</p>
+                      <p className="text-3xl font-bold">{stats.memorials}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Users className="w-6 h-6 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -219,9 +281,81 @@ export default function AdminDashboard() {
           )}
         </div>
 
+        {/* My Memorials Preview */}
+        {memorials.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Memorial Saya</h2>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/admin/memorials">
+                  Lihat Semua
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {memorials.map((memorial) => (
+                <Card key={memorial.id} className="overflow-hidden">
+                  <div className="relative h-24 bg-muted">
+                    {memorial.cover_image ? (
+                      <img
+                        src={memorial.cover_image}
+                        alt={memorial.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20" />
+                    )}
+                    <div className="absolute -bottom-6 left-4">
+                      <div className="w-12 h-12 rounded-full border-4 border-background bg-muted overflow-hidden">
+                        {memorial.profile_image ? (
+                          <img
+                            src={memorial.profile_image}
+                            alt={memorial.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                            <User className="w-6 h-6 text-primary/40" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <CardContent className="pt-8 pb-4">
+                    <h3 className="font-semibold">{memorial.name}</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                      {memorial.birth_place && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {memorial.birth_place}
+                        </span>
+                      )}
+                      {memorial.birth_date && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(memorial.birth_date).getFullYear()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Button variant="outline" size="sm" className="flex-1" asChild>
+                        <Link to={`/memorial/${memorial.slug}`} target="_blank">
+                          <Eye className="w-4 h-4 mr-1" />
+                          Lihat
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <h2 className="text-xl font-semibold mb-4">Menu Pengelolaan</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {menuItems.map((item) => (
             <Card key={item.href} className="hover:shadow-lg transition-shadow cursor-pointer">
               <Link to={item.href}>
@@ -247,6 +381,12 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-semibold mb-4">Aksi Cepat</h2>
           <div className="flex flex-wrap gap-3">
             <Button asChild>
+              <Link to="/admin/memorials">
+                <Plus className="w-4 h-4 mr-2" />
+                Buat Memorial
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
               <Link to="/admin/photos">
                 <Plus className="w-4 h-4 mr-2" />
                 Tambah Foto
@@ -256,12 +396,6 @@ export default function AdminDashboard() {
               <Link to="/admin/videos">
                 <Plus className="w-4 h-4 mr-2" />
                 Tambah Video
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/admin/stories">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Lihat Cerita
               </Link>
             </Button>
           </div>

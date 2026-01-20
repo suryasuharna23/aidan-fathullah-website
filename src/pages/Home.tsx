@@ -16,66 +16,67 @@ import {
   Video,
   BookOpen,
   Users,
-  Star
+  Star,
+  Search
 } from "lucide-react";
 
 const features = [
   {
-    icon: User,
-    title: "Halaman Profil",
-    description: "Tampilkan biodata lengkap, latar belakang, hal yang disukai dan tidak disukai. Sebuah ruang untuk mengenal lebih dekat sosok yang selalu dirindukan.",
-    link: "/profile",
-    linkText: "Lihat Profil",
+    icon: Search,
+    title: "Explore Memorial",
+    description: "Temukan dan jelajahi memorial orang-orang tersayang. Cari berdasarkan nama atau lokasi dan kenang mereka dengan penuh cinta.",
+    link: "/explore",
+    linkText: "Jelajahi Sekarang",
     color: "from-blue-500 to-cyan-500"
   },
   {
-    icon: Image,
-    title: "Galeri Foto & Video",
-    description: "Kumpulan momen berharga dalam bentuk foto dan video. Upload, lihat, dan nikmati kenangan indah yang terabadikan.",
-    link: "/gallery",
-    linkText: "Buka Galeri",
+    icon: User,
+    title: "Buat Memorial",
+    description: "Daftarkan diri sebagai admin untuk membuat memorial orang tersayang. Kelola profil, galeri, dan cerita dengan mudah.",
+    link: "/admin/register",
+    linkText: "Daftar Sekarang",
     color: "from-purple-500 to-pink-500"
   },
   {
-    icon: Clock,
-    title: "Story Timeline",
-    description: "Ceritakan kisah dan kenangan bersama dalam timeline yang indah. Setiap cerita dilengkapi dengan tanggal dan foto pendukung.",
-    link: "/story",
-    linkText: "Lihat Story",
+    icon: Heart,
+    title: "Berbagi Kenangan",
+    description: "Bagikan cerita dan kenangan Anda. Berikan like dan komentar pada story yang menyentuh hati.",
+    link: "/explore",
+    linkText: "Mulai Berbagi",
     color: "from-orange-500 to-red-500"
   },
 ];
 
-const subFeatures = [
+const memorialFeatures = [
+  {
+    icon: User,
+    title: "Halaman Profil",
+    description: "Tampilkan biodata lengkap, latar belakang, dan hal-hal yang disukai"
+  },
+  {
+    icon: Image,
+    title: "Galeri Foto & Video",
+    description: "Kumpulan momen berharga dalam foto dan video"
+  },
+  {
+    icon: Clock,
+    title: "Story Timeline",
+    description: "Cerita dan kenangan dalam timeline yang indah"
+  },
   {
     icon: Heart,
     title: "Sistem Like",
-    description: "Berikan apresiasi pada setiap cerita dengan fitur like"
+    description: "Berikan apresiasi pada setiap cerita"
   },
   {
     icon: MessageCircle,
     title: "Komentar",
-    description: "Tinggalkan pesan dan kenangan di setiap story yang dibagikan"
-  },
-  {
-    icon: Upload,
-    title: "Upload Mudah",
-    description: "Upload foto dan video dengan mudah langsung dari perangkat Anda"
+    description: "Tinggalkan pesan dan kenangan"
   },
   {
     icon: Shield,
     title: "Admin Panel",
-    description: "Kelola konten dengan aman melalui panel admin yang dilindungi"
-  },
-  {
-    icon: Camera,
-    title: "Carousel Foto",
-    description: "Tampilan carousel interaktif untuk melihat koleksi foto"
-  },
-  {
-    icon: Video,
-    title: "Video Player",
-    description: "Putar video kenangan dengan player yang responsif"
+    description: "Kelola konten dengan aman"
   },
 ];
 
@@ -108,18 +109,18 @@ const Home = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up" style={{ animationDelay: "0.3s" }}>
               <Link
-                to="/profile"
+                to="/explore"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-all shadow-warm hover:shadow-lg"
               >
-                <User className="w-5 h-5" />
-                Lihat Profil
+                <Search className="w-5 h-5" />
+                Jelajahi Memorial
               </Link>
               <Link
-                to="/gallery"
+                to="/admin/register"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-muted text-foreground rounded-full font-medium hover:bg-muted/80 transition-all"
               >
-                <Image className="w-5 h-5" />
-                Jelajahi Galeri
+                <User className="w-5 h-5" />
+                Buat Memorial
               </Link>
             </div>
           </div>
@@ -173,12 +174,12 @@ const Home = () => {
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
           <SectionTitle
-            title="Fitur Pendukung"
-            subtitle="Berbagai fitur tambahan untuk pengalaman yang lebih lengkap"
+            title="Fitur Setiap Memorial"
+            subtitle="Setiap memorial dilengkapi dengan fitur lengkap berikut"
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {subFeatures.map((feature, index) => {
+            {memorialFeatures.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
@@ -216,18 +217,18 @@ const Home = () => {
               {[
                 {
                   step: "01",
-                  title: "Jelajahi Profil",
-                  description: "Kunjungi halaman profil untuk mengenal lebih dekat sosok yang dikenang"
+                  title: "Daftar Sebagai Admin",
+                  description: "Buat akun untuk mengelola memorial orang tersayang Anda"
                 },
                 {
                   step: "02",
-                  title: "Lihat Kenangan",
-                  description: "Buka galeri untuk melihat foto dan video momen-momen berharga"
+                  title: "Buat Memorial",
+                  description: "Lengkapi profil, upload foto, dan tambahkan cerita"
                 },
                 {
                   step: "03",
-                  title: "Bagikan Cerita",
-                  description: "Tambahkan cerita Anda di Story Timeline dan berikan komentar"
+                  title: "Bagikan & Kenang",
+                  description: "Bagikan ke keluarga dan teman untuk bersama mengenang"
                 }
               ].map((item, index) => (
                 <div key={index} className="text-center">
@@ -256,20 +257,20 @@ const Home = () => {
             </div>
             
             <h2 className="font-sans text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Mulai Berbagi Kenangan
+              Mulai Mengabadikan Kenangan
             </h2>
             
             <p className="font-sans text-muted-foreground mb-8 max-w-xl mx-auto">
-              Setiap cerita dan momen berharga layak untuk diabadikan. Mulailah berbagi kenangan Anda dan jadilah bagian dari memorial digital ini.
+              Setiap cerita dan momen berharga layak untuk diabadikan. Buat memorial untuk orang tersayang dan bagikan kenangan bersama keluarga dan teman.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                to="/story"
+                to="/explore"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-all shadow-warm"
               >
-                <Clock className="w-5 h-5" />
-                Lihat Story Timeline
+                <Search className="w-5 h-5" />
+                Jelajahi Memorial
               </Link>
               <Link
                 to="/admin/register"
