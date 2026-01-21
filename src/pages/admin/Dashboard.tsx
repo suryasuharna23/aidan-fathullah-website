@@ -69,15 +69,38 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
-      const [memorialsRes, photosRes, videosRes, storiesRes] = await Promise.all([
-        supabase.from("memorials").select("id", { count: "exact", head: true }).eq("admin_id", user.id),
-        supabase.from("photos").select("id", { count: "exact", head: true }),
-        supabase.from("videos").select("id", { count: "exact", head: true }),
-        supabase.from("stories").select("id", { count: "exact", head: true }),
+      // Pertama, ambil semua memorial IDs milik admin ini
+      const { data: memorials, error: memorialsError } = await supabase
+        .from("memorials")
+        .select("id")
+        .eq("admin_id", user.id);
+
+      if (memorialsError) throw memorialsError;
+
+      const memorialIds = memorials?.map(m => m.id) || [];
+      const memorialCount = memorialIds.length;
+
+      // Jika admin belum punya memorial, semua stats = 0
+      if (memorialIds.length === 0) {
+        setStats({
+          memorials: 0,
+          photos: 0,
+          videos: 0,
+          stories: 0,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Fetch counts untuk photos, videos, stories yang terkait memorial admin
+      const [photosRes, videosRes, storiesRes] = await Promise.all([
+        supabase.from("photos").select("id", { count: "exact", head: true }).in("memorial_id", memorialIds),
+        supabase.from("videos").select("id", { count: "exact", head: true }).in("memorial_id", memorialIds),
+        supabase.from("stories").select("id", { count: "exact", head: true }).in("memorial_id", memorialIds),
       ]);
 
       setStats({
-        memorials: memorialsRes.count || 0,
+        memorials: memorialCount,
         photos: photosRes.count || 0,
         videos: videosRes.count || 0,
         stories: storiesRes.count || 0,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ interface Photo {
 }
 
 export default function AdminPhotos() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,15 +66,37 @@ export default function AdminPhotos() {
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchPhotos();
-  }, []);
+    if (user) fetchPhotos();
+  }, [user]);
 
   const fetchPhotos = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
+      
+      // Ambil memorial IDs yang dimiliki admin ini
+      const { data: memorials, error: memorialsError } = await supabase
+        .from("memorials")
+        .select("id")
+        .eq("admin_id", user.id);
+
+      if (memorialsError) throw memorialsError;
+
+      const memorialIds = memorials?.map(m => m.id) || [];
+
+      // Jika admin belum punya memorial, tampilkan kosong
+      if (memorialIds.length === 0) {
+        setPhotos([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch photos yang terkait dengan memorial admin ini
       const { data, error } = await supabase
         .from("photos")
         .select("*")
+        .in("memorial_id", memorialIds)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

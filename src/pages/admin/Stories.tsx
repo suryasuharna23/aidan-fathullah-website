@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +40,7 @@ interface Story {
 }
 
 export default function AdminStories() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,15 +50,37 @@ export default function AdminStories() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchStories();
-  }, []);
+    if (user) fetchStories();
+  }, [user]);
 
   const fetchStories = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
+      
+      // Ambil memorial IDs yang dimiliki admin ini
+      const { data: memorials, error: memorialsError } = await supabase
+        .from("memorials")
+        .select("id")
+        .eq("admin_id", user.id);
+
+      if (memorialsError) throw memorialsError;
+
+      const memorialIds = memorials?.map(m => m.id) || [];
+
+      // Jika admin belum punya memorial, tampilkan kosong
+      if (memorialIds.length === 0) {
+        setStories([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch stories yang terkait dengan memorial admin ini
       const { data, error } = await supabase
         .from("stories")
         .select("*")
+        .in("memorial_id", memorialIds)
         .order("story_date", { ascending: false });
 
       if (error) throw error;

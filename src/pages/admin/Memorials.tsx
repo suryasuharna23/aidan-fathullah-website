@@ -107,25 +107,43 @@ export default function AdminMemorials() {
   }, [user]);
 
   const fetchMemorials = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log("Fetching memorials for user:", user.id);
+      
       const { data, error } = await supabase
         .from("memorials")
         .select("*")
         .eq("admin_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      console.log("Memorials fetch result:", { data, error });
+
+      if (error) {
+        // PGRST116 berarti tidak ada data (bukan error)
+        if (error.code === "PGRST116") {
+          setMemorials([]);
+          return;
+        }
+        throw error;
+      }
+      
       setMemorials(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching memorials:", error);
-      toast({
-        title: "Error",
-        description: "Gagal memuat data memorial",
-        variant: "destructive",
-      });
+      // Jangan tampilkan error jika hanya tidak ada data
+      if (error?.code !== "PGRST116") {
+        toast({
+          title: "Error",
+          description: "Gagal memuat data memorial",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
