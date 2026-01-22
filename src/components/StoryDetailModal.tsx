@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Heart, Send, ChevronLeft, ChevronRight, Loader2, MessageCircle } from "lucide-react";
+import { X, Heart, Send, Loader2, MessageCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 interface Comment {
@@ -26,7 +26,6 @@ interface StoryDetailModalProps {
 }
 
 export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalProps) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -51,7 +50,6 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
       fetchLikes();
       fetchComments();
       checkIfLiked();
-      setCurrentImageIndex(0);
     }
   }, [isOpen, story.id]);
 
@@ -69,7 +67,7 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
     }
   };
 
-  // Check apakah user sudah like (berdasarkan localStorage)
+  // Check apakah user sudah like
   const checkIfLiked = () => {
     const likedStories = JSON.parse(localStorage.getItem("likedStories") || "[]");
     setIsLiked(likedStories.includes(String(story.id)));
@@ -108,7 +106,6 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
 
     try {
       if (isLiked) {
-        // Unlike - hapus dari database
         const { error } = await supabase
           .from("story_likes")
           .delete()
@@ -116,20 +113,17 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
           .eq("user_identifier", deviceId);
 
         if (!error) {
-          // Update localStorage
           const newLikedStories = likedStories.filter((id: string) => id !== storyIdStr);
           localStorage.setItem("likedStories", JSON.stringify(newLikedStories));
           setIsLiked(false);
           setLikes((prev) => Math.max(0, prev - 1));
         }
       } else {
-        // Like - tambah ke database
         const { error } = await supabase
           .from("story_likes")
           .insert([{ story_id: story.id, user_identifier: deviceId }]);
 
         if (!error) {
-          // Update localStorage
           likedStories.push(storyIdStr);
           localStorage.setItem("likedStories", JSON.stringify(likedStories));
           setIsLiked(true);
@@ -139,7 +133,6 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
     } catch (err) {
       console.error("Error toggling like:", err);
     }
-    
     setLikingInProgress(false);
   };
 
@@ -171,23 +164,6 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
     setSubmittingComment(false);
   };
 
-  // Image navigation
-  const nextImage = () => {
-    if (story.story_images) {
-      setCurrentImageIndex((prev) =>
-        prev === story.story_images!.length - 1 ? 0 : prev + 1
-      );
-    }
-  };
-
-  const prevImage = () => {
-    if (story.story_images) {
-      setCurrentImageIndex((prev) =>
-        prev === 0 ? story.story_images!.length - 1 : prev - 1
-      );
-    }
-  };
-
   // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("id-ID", {
@@ -207,111 +183,78 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
       onClick={onClose}
     >
       <div 
-        className="bg-background rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row"
+        className="bg-background rounded-xl shadow-2xl max-w-2xl w-full h-full max-h-[90vh] flex flex-col relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Left Side - Images */}
-        <div className="md:w-1/2 bg-black relative">
-          {story.story_images && story.story_images.length > 0 ? (
-            <div className="relative aspect-square md:h-full">
-              <img
-                src={story.story_images[currentImageIndex]}
-                alt={`Foto ${currentImageIndex + 1}`}
-                className="w-full h-full object-contain"
-              />
-              
-              {/* Navigation */}
-              {story.story_images.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                  
-                  {/* Dots */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {story.story_images.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          index === currentImageIndex
-                            ? "bg-white w-4"
-                            : "bg-white/50 hover:bg-white/75"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </>
+        
+        {/* === HEADER (Sticky Top) === */}
+        <div className="flex items-center justify-between p-4 border-b bg-background z-10 rounded-t-xl shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+              {story.author_image ? (
+                <img src={story.author_image} alt={story.author} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-serif text-primary">
+                  {story.author.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                </span>
               )}
             </div>
-          ) : (
-            <div className="aspect-square md:h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-4xl font-serif text-primary">
-                    {story.author.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
-                  </span>
-                </div>
-                <p className="text-muted-foreground">Tidak ada foto</p>
-              </div>
+            <div>
+              <h4 className="font-semibold text-foreground">{story.author}</h4>
+              {story.story_date && (
+                <p className="text-xs text-muted-foreground">
+                  {new Date(story.story_date).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </p>
+              )}
             </div>
-          )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-muted rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Right Side - Content & Comments */}
-        <div className="md:w-1/2 flex flex-col max-h-[90vh] md:max-h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20">
-                {story.author_image ? (
-                  <img src={story.author_image} alt={story.author} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-sm font-serif text-primary">
-                    {story.author.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
-                  </span>
-                )}
+        {/* === SCROLLABLE CONTENT === */}
+        <div className="flex-1 overflow-y-auto">
+          
+          {/* Images Stack */}
+          <div className="w-full bg-muted/20">
+            {story.story_images && story.story_images.length > 0 ? (
+              <div className="flex flex-col gap-2 p-0">
+                {story.story_images.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img}
+                    alt={`Foto ${index + 1}`}
+                    className="w-full h-auto object-cover max-h-[500px]"
+                    loading="lazy"
+                  />
+                ))}
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground">{story.author}</h4>
-                {story.story_date && (
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(story.story_date).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </p>
-                )}
+            ) : (
+              <div className="aspect-video w-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <div className="text-center">
+                   <p className="text-muted-foreground text-sm">Tidak ada foto</p>
+                </div>
               </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-muted rounded-full transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            )}
           </div>
 
           {/* Story Content */}
-          <div className="p-4 border-b">
-            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+          <div className="p-5">
+             <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap text-[15px]">
               {story.content}
             </p>
           </div>
 
-          {/* Like & Comment Count */}
-          <div className="flex items-center gap-6 p-4 border-b">
-            {/* Like Button */}
+          {/* Action Bar */}
+          <div className="flex items-center gap-6 px-5 pb-4 border-b">
             <button
               type="button"
               onClick={handleLike}
@@ -330,15 +273,14 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
               <span className="font-medium">{likes}</span>
             </button>
             
-            {/* Comment Count */}
             <div className="flex items-center gap-2 text-muted-foreground">
               <MessageCircle className="w-6 h-6" />
               <span className="font-medium">{comments.length}</span>
             </div>
           </div>
 
-          {/* Comments Section */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Comments List */}
+          <div className="p-5 space-y-4 mb-2">
             <h5 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
               Komentar
             </h5>
@@ -353,61 +295,56 @@ export const StoryDetailModal = ({ story, isOpen, onClose }: StoryDetailModalPro
               </p>
             ) : (
               comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-medium text-primary">
-                      {comment.author.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
-                    </span>
+                <div key={comment.id} className="flex flex-col">
+                  {/* MODIFIKASI: Profile circle dihapus, langsung bubble text */}
+                  <div className="bg-muted rounded-lg p-3">
+                    <p className="font-semibold text-sm mb-1 text-primary">{comment.author}</p>
+                    <p className="text-sm text-foreground/80">{comment.content}</p>
                   </div>
-                  <div className="flex-1">
-                    <div className="bg-muted rounded-lg p-3">
-                      <p className="font-medium text-sm">{comment.author}</p>
-                      <p className="text-sm text-foreground/80">{comment.content}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDate(comment.created_at)}
-                    </p>
-                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1 ml-2">
+                    {formatDate(comment.created_at)}
+                  </p>
                 </div>
               ))
             )}
           </div>
+        </div>
 
-          {/* Comment Form */}
-          <form onSubmit={handleSubmitComment} className="p-4 border-t bg-muted/30">
-            <div className="space-y-3">
+        {/* === COMMENT FORM (Sticky Bottom) === */}
+        <form onSubmit={handleSubmitComment} className="p-4 border-t bg-background shrink-0 rounded-b-xl z-10">
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={newComment.author}
+              onChange={(e) => setNewComment({ ...newComment, author: e.target.value })}
+              placeholder="Nama Anda"
+              className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+              required
+            />
+            <div className="flex gap-2">
               <input
                 type="text"
-                value={newComment.author}
-                onChange={(e) => setNewComment({ ...newComment, author: e.target.value })}
-                placeholder="Nama Anda"
-                className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+                value={newComment.content}
+                onChange={(e) => setNewComment({ ...newComment, content: e.target.value })}
+                placeholder="Tulis komentar..."
+                className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                 required
               />
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newComment.content}
-                  onChange={(e) => setNewComment({ ...newComment, content: e.target.value })}
-                  placeholder="Tulis komentar..."
-                  className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={submittingComment}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-                >
-                  {submittingComment ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={submittingComment}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {submittingComment ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </button>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
+
       </div>
     </div>
   );
