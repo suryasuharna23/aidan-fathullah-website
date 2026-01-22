@@ -42,6 +42,24 @@ const MemorialStory = () => {
   const [authorImagePreview, setAuthorImagePreview] = useState<string | null>(null);
   const [storyImagePreviews, setStoryImagePreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [likedStories, setLikedStories] = useState<Set<string>>(new Set());
+  const [likingStory, setLikingStory] = useState<string | null>(null);
+
+  // Generate device ID untuk tracking likes
+  const getDeviceId = () => {
+    let deviceId = localStorage.getItem("deviceId");
+    if (!deviceId) {
+      deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      localStorage.setItem("deviceId", deviceId);
+    }
+    return deviceId;
+  };
+
+  // Check liked stories from localStorage on mount
+  useEffect(() => {
+    const storedLikedStories = JSON.parse(localStorage.getItem("likedStories") || "[]");
+    setLikedStories(new Set(storedLikedStories));
+  }, []);
 
   // Fetch memorial first
   useEffect(() => {
@@ -144,6 +162,75 @@ const MemorialStory = () => {
       console.error("Error fetching stories:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle like story
+  const handleLikeStory = async (e: React.MouseEvent, storyId: string) => {
+    e.stopPropagation(); // Prevent opening modal
+    
+    if (likingStory === storyId) return; // Prevent double click
+    
+    setLikingStory(storyId);
+    const deviceId = getDeviceId();
+    const storedLikedStories = JSON.parse(localStorage.getItem("likedStories") || "[]");
+    const storyIdStr = String(storyId);
+    const isCurrentlyLiked = likedStories.has(storyIdStr);
+
+    try {
+      if (isCurrentlyLiked) {
+        // Unlike - hapus dari database
+        const { error } = await supabase
+          .from("story_likes")
+          .delete()
+          .eq("story_id", storyId)
+          .eq("user_identifier", deviceId);
+
+        if (!error) {
+          // Update localStorage
+          const newStoredLikedStories = storedLikedStories.filter((id: string) => id !== storyIdStr);
+          localStorage.setItem("likedStories", JSON.stringify(newStoredLikedStories));
+          
+          // Update state
+          setLikedStories(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(storyIdStr);
+            return newSet;
+          });
+          setStories(prevStories =>
+            prevStories.map(s =>
+              s.id === storyId
+                ? { ...s, likes_count: Math.max(0, (s.likes_count || 0) - 1) }
+                : s
+            )
+          );
+        }
+      } else {
+        // Like - tambah ke database
+        const { error } = await supabase
+          .from("story_likes")
+          .insert([{ story_id: storyId, user_identifier: deviceId }]);
+
+        if (!error) {
+          // Update localStorage
+          storedLikedStories.push(storyIdStr);
+          localStorage.setItem("likedStories", JSON.stringify(storedLikedStories));
+          
+          // Update state
+          setLikedStories(prev => new Set(prev).add(storyIdStr));
+          setStories(prevStories =>
+            prevStories.map(s =>
+              s.id === storyId
+                ? { ...s, likes_count: (s.likes_count || 0) + 1 }
+                : s
+            )
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Error toggling like:", err);
+    } finally {
+      setLikingStory(null);
     }
   };
 
@@ -492,10 +579,18 @@ const MemorialStory = () => {
                             {/* Action Icons with Counts */}
                             <div className="mt-3 pt-3 border-t flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors">
-                                  <Heart className="w-4 h-4" />
+                                <button
+                                  onClick={(e) => handleLikeStory(e, String(story.id))}
+                                  disabled={likingStory === String(story.id)}
+                                  className={`flex items-center gap-1 transition-colors ${
+                                    likedStories.has(String(story.id)) 
+                                      ? 'text-red-500' 
+                                      : 'text-muted-foreground hover:text-red-500'
+                                  }`}
+                                >
+                                  <Heart className={`w-4 h-4 ${likedStories.has(String(story.id)) ? 'fill-current' : ''}`} />
                                   <span className="text-xs font-medium">{story.likes_count || 0}</span>
-                                </div>
+                                </button>
                                 <div className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
                                   <MessageCircle className="w-4 h-4" />
                                   <span className="text-xs font-medium">{story.comments_count || 0}</span>
@@ -586,10 +681,18 @@ const MemorialStory = () => {
                             {/* Action Icons with Counts */}
                             <div className="mt-4 pt-4 border-t flex items-center justify-between">
                               <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors">
-                                  <Heart className="w-5 h-5" />
+                                <button
+                                  onClick={(e) => handleLikeStory(e, String(story.id))}
+                                  disabled={likingStory === String(story.id)}
+                                  className={`flex items-center gap-1.5 transition-colors ${
+                                    likedStories.has(String(story.id)) 
+                                      ? 'text-red-500' 
+                                      : 'text-muted-foreground hover:text-red-500'
+                                  }`}
+                                >
+                                  <Heart className={`w-5 h-5 ${likedStories.has(String(story.id)) ? 'fill-current' : ''}`} />
                                   <span className="text-sm font-medium">{story.likes_count || 0}</span>
-                                </div>
+                                </button>
                                 <div className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
                                   <MessageCircle className="w-5 h-5" />
                                   <span className="text-sm font-medium">{story.comments_count || 0}</span>
@@ -706,12 +809,23 @@ const MemorialStory = () => {
                 <label className="block text-sm font-medium mb-2">Cerita Anda *</label>
                 <textarea
                   value={newStory.content}
-                  onChange={(e) => setNewStory({ ...newStory, content: e.target.value })}
+                  onChange={(e) => {
+                    const words = e.target.value.trim().split(/\s+/).filter(w => w.length > 0);
+                    if (words.length <= 200 || e.target.value.length < newStory.content.length) {
+                      setNewStory({ ...newStory, content: e.target.value });
+                    }
+                  }}
                   placeholder={`Ceritakan kenangan Anda bersama ${memorial.name}...`}
                   rows={5}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                   required
                 />
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-xs text-muted-foreground">Maksimal 200 kata</p>
+                  <p className={`text-xs ${newStory.content.trim().split(/\s+/).filter(w => w.length > 0).length >= 180 ? 'text-orange-500' : 'text-muted-foreground'} ${newStory.content.trim().split(/\s+/).filter(w => w.length > 0).length >= 200 ? 'text-red-500 font-medium' : ''}`}>
+                    {newStory.content.trim() ? newStory.content.trim().split(/\s+/).filter(w => w.length > 0).length : 0}/200 kata
+                  </p>
+                </div>
               </div>
 
               {/* Story Images */}
