@@ -381,8 +381,8 @@ const MemorialStory = () => {
             <div className="max-w-7xl mx-auto">
               {/* Timeline */}
               <div className="relative">
-                {/* Timeline Line - Left side */}
-                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20"></div>
+                {/* Timeline Line - Left on mobile, Center on desktop */}
+                <div className="absolute left-0 lg:left-1/2 lg:-translate-x-px top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20"></div>
                 
                 {stories.map((story, index) => {
                   const storyDate = story.story_date ? new Date(story.story_date) : null;
@@ -399,42 +399,44 @@ const MemorialStory = () => {
                       })
                     : null;
                   
+                  const isEven = index % 2 === 0;
+                  
                   return (
                     <div
                       key={story.id}
-                      className="relative pb-12 md:pb-16 animate-fade-up"
+                      className="relative pb-12 lg:pb-16 animate-fade-up"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      {/* Timeline Dot - Left side */}
-                      <div className="absolute left-0 -translate-x-1/2 top-3 z-10">
-                        <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-primary border-4 border-background shadow-md"></div>
+                      {/* Timeline Dot - Left on mobile, Center on desktop */}
+                      <div className="absolute left-0 lg:left-1/2 -translate-x-1/2 top-3 z-10">
+                        <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full bg-primary border-4 border-background shadow-md"></div>
                       </div>
                       
-                      {/* Date Badge - Center */}
-                      <div className="flex justify-center mb-4">
+                      {/* Date Badge - Center on mobile, Above dot on desktop */}
+                      <div className="flex justify-center mb-4 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:top-0 lg:mb-0 lg:z-20">
                         {storyDate ? (
                           <div className="bg-primary text-primary-foreground rounded-full shadow-lg flex items-center gap-1.5 px-4 py-2">
-                            <span className="text-sm md:text-base font-bold">{day}</span>
-                            <span className="text-xs md:text-sm uppercase">{month}</span>
-                            <span className="text-xs md:text-sm opacity-80">{year}</span>
+                            <span className="text-sm lg:text-base font-bold">{day}</span>
+                            <span className="text-xs lg:text-sm">{month}</span>
+                            <span className="text-xs lg:text-sm opacity-80">{year}</span>
                           </div>
                         ) : (
                           <div className="bg-muted text-muted-foreground rounded-full shadow-lg flex items-center gap-1.5 px-4 py-2">
                             <Calendar className="w-4 h-4" />
-                            <span className="text-xs md:text-sm">Tanggal tidak diketahui</span>
+                            <span className="text-xs lg:text-sm">Tanggal tidak diketahui</span>
                           </div>
                         )}
                       </div>
                       
-                      {/* Card Layout - Foto di atas, Cerita di bawah */}
-                      <div className="pl-6 md:pl-8">
+                      {/* Mobile Layout - Stacked */}
+                      <div className="lg:hidden pl-6">
                         <div 
                           className="bg-card rounded-xl shadow-lg border overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
                           onClick={() => setSelectedStory(story)}
                         >
                           {/* Image - Top */}
                           {story.story_images && story.story_images.length > 0 ? (
-                            <div className="relative aspect-video md:aspect-[21/9] group">
+                            <div className="relative aspect-video group">
                               <img
                                 src={story.story_images[0]}
                                 alt={`Foto kenangan dari ${story.author}`}
@@ -448,9 +450,9 @@ const MemorialStory = () => {
                               )}
                             </div>
                           ) : (
-                            <div className="aspect-video md:aspect-[21/9] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group hover:from-primary/30 hover:to-primary/10 transition-colors">
-                              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                                <span className="text-2xl md:text-3xl font-serif text-primary">
+                            <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group hover:from-primary/30 hover:to-primary/10 transition-colors">
+                              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                                <span className="text-2xl font-serif text-primary">
                                   {story.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                                 </span>
                               </div>
@@ -458,24 +460,24 @@ const MemorialStory = () => {
                           )}
                           
                           {/* Content - Bottom */}
-                          <div className="p-4 md:p-6">
+                          <div className="p-4">
                             {/* Author Info */}
-                            <div className="flex items-center gap-2.5 md:gap-3 mb-3 md:mb-4">
-                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20 flex-shrink-0">
+                            <div className="flex items-center gap-2.5 mb-3">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20 flex-shrink-0">
                                 {story.author_image ? (
                                   <img src={story.author_image} alt={story.author} className="w-full h-full object-cover" />
                                 ) : (
-                                  <span className="text-sm md:text-lg font-serif text-primary">
+                                  <span className="text-sm font-serif text-primary">
                                     {story.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                                   </span>
                                 )}
                               </div>
                               <div>
-                                <h4 className="font-serif font-semibold text-foreground md:text-lg">
+                                <h4 className="font-serif font-semibold text-foreground">
                                   {story.author}
                                 </h4>
                                 {createdDate && (
-                                  <p className="text-xs md:text-sm text-muted-foreground">
+                                  <p className="text-xs text-muted-foreground">
                                     Ditulis pada {createdDate}
                                   </p>
                                 )}
@@ -483,25 +485,119 @@ const MemorialStory = () => {
                             </div>
                             
                             {/* Story Content */}
-                            <p className="font-body text-foreground/90 text-sm md:text-base leading-relaxed line-clamp-4 md:line-clamp-5">
+                            <p className="font-body text-foreground/90 text-sm leading-relaxed line-clamp-4">
                               {story.content}
                             </p>
                             
                             {/* Action Icons with Counts */}
-                            <div className="mt-3 md:mt-4 pt-3 border-t flex items-center justify-between">
-                              <div className="flex items-center gap-3 md:gap-4">
-                                <div className="flex items-center gap-1 md:gap-1.5 text-muted-foreground hover:text-red-500 transition-colors">
-                                  <Heart className="w-4 h-4 md:w-5 md:h-5" />
-                                  <span className="text-xs md:text-sm font-medium">{story.likes_count || 0}</span>
+                            <div className="mt-3 pt-3 border-t flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors">
+                                  <Heart className="w-4 h-4" />
+                                  <span className="text-xs font-medium">{story.likes_count || 0}</span>
                                 </div>
-                                <div className="flex items-center gap-1 md:gap-1.5 text-muted-foreground hover:text-primary transition-colors">
-                                  <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
-                                  <span className="text-xs md:text-sm font-medium">{story.comments_count || 0}</span>
+                                <div className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+                                  <MessageCircle className="w-4 h-4" />
+                                  <span className="text-xs font-medium">{story.comments_count || 0}</span>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1 text-primary text-xs md:text-sm font-medium">
+                              <div className="flex items-center gap-1 text-primary text-xs font-medium">
                                 <span>Lihat Detail</span>
-                                <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                                <ArrowRight className="w-3 h-3" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Desktop Layout - Side by Side */}
+                      <div className={`hidden lg:flex items-stretch pt-14 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
+                        {/* Image Side */}
+                        <div 
+                          className={`w-1/2 ${isEven ? 'pr-8' : 'pl-8'} cursor-pointer`}
+                          onClick={() => setSelectedStory(story)}
+                        >
+                          {story.story_images && story.story_images.length > 0 ? (
+                            <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-lg group">
+                              <img
+                                src={story.story_images[0]}
+                                alt={`Foto kenangan dari ${story.author}`}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                                  Lihat Detail
+                                </span>
+                              </div>
+                              {story.story_images.length > 1 && (
+                                <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                                  +{story.story_images.length - 1} foto lainnya
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="aspect-[4/3] rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group hover:from-primary/30 hover:to-primary/10 transition-colors">
+                              <div className="text-center">
+                                <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <span className="text-3xl font-serif text-primary">
+                                    {story.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Klik untuk detail</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Content Side */}
+                        <div 
+                          className={`w-1/2 ${isEven ? 'pl-8' : 'pr-8'} cursor-pointer`}
+                          onClick={() => setSelectedStory(story)}
+                        >
+                          <div className="bg-card rounded-xl p-6 shadow-lg border h-full hover:shadow-xl transition-shadow">
+                            {/* Author Info */}
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20 flex-shrink-0">
+                                {story.author_image ? (
+                                  <img src={story.author_image} alt={story.author} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-lg font-serif text-primary">
+                                    {story.author.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="font-serif font-semibold text-foreground text-lg">
+                                  {story.author}
+                                </h4>
+                                {createdDate && (
+                                  <p className="text-sm text-muted-foreground">
+                                    Ditulis pada {createdDate}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Story Content */}
+                            <p className="font-body text-foreground/90 leading-relaxed line-clamp-6">
+                              {story.content}
+                            </p>
+                            
+                            {/* Action Icons with Counts */}
+                            <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors">
+                                  <Heart className="w-5 h-5" />
+                                  <span className="text-sm font-medium">{story.likes_count || 0}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
+                                  <MessageCircle className="w-5 h-5" />
+                                  <span className="text-sm font-medium">{story.comments_count || 0}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 text-primary text-sm font-medium">
+                                <span>Lihat Detail</span>
+                                <ArrowRight className="w-4 h-4" />
                               </div>
                             </div>
                           </div>
