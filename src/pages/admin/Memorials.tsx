@@ -537,6 +537,15 @@ export default function AdminMemorials() {
                       size="sm"
                       asChild
                     >
+                      <Link to={`/admin/memorials/${memorial.id}`}>
+                        Kelola
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                    >
                       <Link to={`/memorial/${memorial.slug}`} target="_blank">
                         <ExternalLink className="w-4 h-4" />
                       </Link>
