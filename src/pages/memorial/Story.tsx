@@ -606,10 +606,10 @@ const MemorialStory = () => {
                       </div>
                       
                       {/* Desktop Layout - Side by Side */}
-                      <div className={`hidden lg:flex items-stretch pt-14 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
+                      <div className="hidden lg:flex items-stretch pt-14 flex-row">
                         {/* Image Side */}
-                        <div 
-                          className={`w-1/2 ${isEven ? 'pr-8' : 'pl-8'} cursor-pointer`}
+                        <div
+                          className="w-1/2 pr-8 cursor-pointer"
                           onClick={() => setSelectedStory(story)}
                         >
                           {story.story_images && story.story_images.length > 0 ? (
@@ -645,8 +645,8 @@ const MemorialStory = () => {
                         </div>
                         
                         {/* Content Side */}
-                        <div 
-                          className={`w-1/2 ${isEven ? 'pl-8' : 'pr-8'} cursor-pointer`}
+                        <div
+                          className="w-1/2 pl-8 cursor-pointer"
                           onClick={() => setSelectedStory(story)}
                         >
                           <div className="bg-card rounded-xl p-6 shadow-lg border h-full hover:shadow-xl transition-shadow">
