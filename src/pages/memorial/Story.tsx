@@ -664,7 +664,7 @@ const MemorialStory = () => {
                       </div>
 
                       {/* Desktop Layout - Side by Side */}
-                      <div className="hidden lg:flex items-stretch pt-14 flex-row">
+                      <div className="hidden lg:flex items-center pt-14 flex-row">
                         {/* Image Side (Desktop) */}
                         <div
                           className="w-1/2 pr-8 cursor-pointer"
@@ -733,10 +733,10 @@ const MemorialStory = () => {
 
                         {/* Content Side */}
                         <div
-                          className="w-1/2 pl-8 cursor-pointer"
+                          className="w-1/2 pl-8 flex cursor-pointer"
                           onClick={() => setSelectedStory(story)}
                         >
-                          <div className="bg-card rounded-xl p-6 shadow-lg border h-full hover:shadow-xl transition-shadow">
+                          <div className="bg-card rounded-xl p-6 shadow-lg border hover:shadow-xl transition-shadow my-auto w-full">
                             {/* Author Info */}
                             <div className="flex items-center gap-3 mb-4">
                               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20 flex-shrink-0">
@@ -761,7 +761,7 @@ const MemorialStory = () => {
                             </div>
 
                             {/* Story Content */}
-                            <p className="font-body text-foreground/90 leading-relaxed line-clamp-6">
+                            <p className="font-body text-foreground/90 leading-relaxed">
                               {story.content}
                             </p>
 
