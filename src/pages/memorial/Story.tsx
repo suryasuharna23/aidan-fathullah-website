@@ -5,7 +5,10 @@ import { Footer } from "@/components/Footer";
 import { SectionTitle } from "@/components/SectionTitle";
 import { StoryCard, Story } from "@/components/StoryCard";
 import { StoryDetailModal } from "@/components/StoryDetailModal";
-import { PenLine, Loader2, X, Upload, Image, Calendar, Heart, MessageCircle, ArrowRight, AlertCircle } from "lucide-react";
+import {
+  PenLine, Loader2, X, Upload, Image, Calendar, Heart,
+  MessageCircle, ArrowRight, AlertCircle, ChevronLeft, ChevronRight
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 // Extend Story type untuk include counts
@@ -22,7 +25,7 @@ interface Memorial {
 const MemorialStory = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  
+
   const [memorial, setMemorial] = useState<Memorial | null>(null);
   const [stories, setStories] = useState<StoryWithCounts[]>([]);
   const [loadingMemorial, setLoadingMemorial] = useState(true);
@@ -32,8 +35,8 @@ const MemorialStory = () => {
 
   // Form states
   const [showForm, setShowForm] = useState(false);
-  const [newStory, setNewStory] = useState({ 
-    author: "", 
+  const [newStory, setNewStory] = useState({
+    author: "",
     content: "",
     storyDate: "",
     authorImageFile: null as File | null,
@@ -44,6 +47,9 @@ const MemorialStory = () => {
   const [submitting, setSubmitting] = useState(false);
   const [likedStories, setLikedStories] = useState<Set<string>>(new Set());
   const [likingStory, setLikingStory] = useState<string | null>(null);
+
+  // State baru untuk menghandle index gambar slider per story
+  const [imageIndices, setImageIndices] = useState<Record<string, number>>({});
 
   // Generate device ID untuk tracking likes
   const getDeviceId = () => {
@@ -122,17 +128,17 @@ const MemorialStory = () => {
         story_date: story.story_date,
         date: story.story_date
           ? new Date(story.story_date).toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
           : story.created_at
-          ? new Date(story.created_at).toLocaleDateString("id-ID", {
+            ? new Date(story.created_at).toLocaleDateString("id-ID", {
               day: "numeric",
               month: "long",
               year: "numeric",
             })
-          : undefined,
+            : undefined,
       })) || [];
 
       // Fetch likes dan comments counts
@@ -165,12 +171,30 @@ const MemorialStory = () => {
     }
   };
 
+  // Handle Image Navigation (Next)
+  const handleNextImage = (e: React.MouseEvent, storyId: string, total: number) => {
+    e.stopPropagation(); // Mencegah modal terbuka saat klik panah
+    setImageIndices(prev => ({
+      ...prev,
+      [storyId]: ((prev[storyId] || 0) + 1) % total
+    }));
+  };
+
+  // Handle Image Navigation (Prev)
+  const handlePrevImage = (e: React.MouseEvent, storyId: string, total: number) => {
+    e.stopPropagation(); // Mencegah modal terbuka saat klik panah
+    setImageIndices(prev => ({
+      ...prev,
+      [storyId]: ((prev[storyId] || 0) - 1 + total) % total
+    }));
+  };
+
   // Handle like story
   const handleLikeStory = async (e: React.MouseEvent, storyId: string) => {
     e.stopPropagation(); // Prevent opening modal
-    
+
     if (likingStory === storyId) return; // Prevent double click
-    
+
     setLikingStory(storyId);
     const deviceId = getDeviceId();
     const storedLikedStories = JSON.parse(localStorage.getItem("likedStories") || "[]");
@@ -190,7 +214,7 @@ const MemorialStory = () => {
           // Update localStorage
           const newStoredLikedStories = storedLikedStories.filter((id: string) => id !== storyIdStr);
           localStorage.setItem("likedStories", JSON.stringify(newStoredLikedStories));
-          
+
           // Update state
           setLikedStories(prev => {
             const newSet = new Set(prev);
@@ -215,7 +239,7 @@ const MemorialStory = () => {
           // Update localStorage
           storedLikedStories.push(storyIdStr);
           localStorage.setItem("likedStories", JSON.stringify(storedLikedStories));
-          
+
           // Update state
           setLikedStories(prev => new Set(prev).add(storyIdStr));
           setStories(prevStories =>
@@ -252,10 +276,10 @@ const MemorialStory = () => {
         prevStories.map((s) =>
           s.id === selectedStory.id
             ? {
-                ...s,
-                likes_count: likesResult.count || 0,
-                comments_count: commentsResult.count || 0,
-              }
+              ...s,
+              likes_count: likesResult.count || 0,
+              comments_count: commentsResult.count || 0,
+            }
             : s
         )
       );
@@ -266,7 +290,7 @@ const MemorialStory = () => {
   // Handle submit story
   const handleSubmitStory = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newStory.author.trim() || !newStory.content.trim()) {
       return;
     }
@@ -308,27 +332,27 @@ const MemorialStory = () => {
         const formattedStory: StoryWithCounts = {
           ...data[0],
           story_date: data[0].story_date,
-          date: data[0].story_date 
+          date: data[0].story_date
             ? new Date(data[0].story_date).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
             : new Date(data[0].created_at).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              }),
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }),
           likes_count: 0,
           comments_count: 0,
         };
-        
+
         const updatedStories = [...stories, formattedStory].sort((a, b) => {
           const dateA = a.story_date ? new Date(a.story_date).getTime() : 0;
           const dateB = b.story_date ? new Date(b.story_date).getTime() : 0;
           return dateB - dateA;
         });
-        
+
         setStories(updatedStories);
       }
 
@@ -358,9 +382,9 @@ const MemorialStory = () => {
   const handleStoryImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      setNewStory({ 
-        ...newStory, 
-        storyImageFiles: [...newStory.storyImageFiles, ...files] 
+      setNewStory({
+        ...newStory,
+        storyImageFiles: [...newStory.storyImageFiles, ...files]
       });
       const newPreviews = files.map(file => URL.createObjectURL(file));
       setStoryImagePreviews([...storyImagePreviews, ...newPreviews]);
@@ -379,7 +403,7 @@ const MemorialStory = () => {
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${memorial!.id}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    
+
     const { error } = await supabase.storage
       .from('media')
       .upload(fileName, file);
@@ -470,24 +494,26 @@ const MemorialStory = () => {
               <div className="relative">
                 {/* Timeline Line - Left on mobile, Center on desktop */}
                 <div className="absolute left-0 lg:left-1/2 lg:-translate-x-px top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-primary/20"></div>
-                
+
                 {stories.map((story, index) => {
                   const storyDate = story.story_date ? new Date(story.story_date) : null;
                   const day = storyDate ? storyDate.getDate() : null;
                   const month = storyDate ? storyDate.toLocaleDateString('id-ID', { month: 'long' }) : null;
                   const year = storyDate ? storyDate.getFullYear() : null;
-                  
+
                   // Format created_at date
-                  const createdDate = story.created_at 
-                    ? new Date(story.created_at).toLocaleDateString('id-ID', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })
+                  const createdDate = story.created_at
+                    ? new Date(story.created_at).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })
                     : null;
-                  
-                  const isEven = index % 2 === 0;
-                  
+
+                  // Logic untuk sliding image
+                  const currentImageIndex = imageIndices[story.id] || 0;
+                  const hasMultipleImages = story.story_images && story.story_images.length > 1;
+
                   return (
                     <div
                       key={story.id}
@@ -498,7 +524,7 @@ const MemorialStory = () => {
                       <div className="absolute left-0 lg:left-1/2 -translate-x-1/2 top-3 z-10">
                         <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full bg-primary border-4 border-background shadow-md"></div>
                       </div>
-                      
+
                       {/* Date Badge - Center on mobile, Above dot on desktop */}
                       <div className="flex justify-center mb-4 lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:top-0 lg:mb-0 lg:z-20">
                         {storyDate ? (
@@ -514,26 +540,59 @@ const MemorialStory = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Mobile Layout - Stacked */}
                       <div className="lg:hidden pl-6">
-                        <div 
+                        <div
                           className="bg-card rounded-xl shadow-lg border overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
                           onClick={() => setSelectedStory(story)}
                         >
-                          {/* Image - Top */}
+                          {/* Image - Top (Mobile) */}
                           {story.story_images && story.story_images.length > 0 ? (
-                            <div className="relative aspect-video group">
-                              <img
-                                src={story.story_images[0]}
-                                alt={`Foto kenangan dari ${story.author}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
-                              {story.story_images.length > 1 && (
-                                <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-                                  +{story.story_images.length - 1} foto lainnya
-                                </div>
+                            <div className="relative aspect-video group bg-black/5 overflow-hidden">
+                              {/* Sliding Container */}
+                              <div
+                                className="flex h-full transition-transform duration-500 ease-in-out"
+                                style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                              >
+                                {story.story_images.map((imgUrl, idx) => (
+                                  <div key={idx} className="min-w-full h-full relative">
+                                    <img
+                                      src={imgUrl}
+                                      alt={`Foto kenangan dari ${story.author} - ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Sliding Controls */}
+                              {hasMultipleImages && (
+                                <>
+                                  <button
+                                    onClick={(e) => handlePrevImage(e, String(story.id), story.story_images!.length)}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors z-20"
+                                  >
+                                    <ChevronLeft className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleNextImage(e, String(story.id), story.story_images!.length)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors z-20"
+                                  >
+                                    <ChevronRight className="w-4 h-4" />
+                                  </button>
+
+                                  {/* Dots Indicator */}
+                                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                                    {story.story_images.map((_, idx) => (
+                                      <div
+                                        key={idx}
+                                        className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentImageIndex ? "bg-white scale-125" : "bg-white/50"
+                                          }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </>
                               )}
                             </div>
                           ) : (
@@ -545,7 +604,7 @@ const MemorialStory = () => {
                               </div>
                             </div>
                           )}
-                          
+
                           {/* Content - Bottom */}
                           <div className="p-4">
                             {/* Author Info */}
@@ -570,23 +629,22 @@ const MemorialStory = () => {
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* Story Content */}
                             <p className="font-body text-foreground/90 text-sm leading-relaxed line-clamp-4">
                               {story.content}
                             </p>
-                            
+
                             {/* Action Icons with Counts */}
                             <div className="mt-3 pt-3 border-t flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <button
                                   onClick={(e) => handleLikeStory(e, String(story.id))}
                                   disabled={likingStory === String(story.id)}
-                                  className={`flex items-center gap-1 transition-colors ${
-                                    likedStories.has(String(story.id)) 
-                                      ? 'text-red-500' 
-                                      : 'text-muted-foreground hover:text-red-500'
-                                  }`}
+                                  className={`flex items-center gap-1 transition-colors ${likedStories.has(String(story.id))
+                                    ? 'text-red-500'
+                                    : 'text-muted-foreground hover:text-red-500'
+                                    }`}
                                 >
                                   <Heart className={`w-4 h-4 ${likedStories.has(String(story.id)) ? 'fill-current' : ''}`} />
                                   <span className="text-xs font-medium">{story.likes_count || 0}</span>
@@ -604,30 +662,59 @@ const MemorialStory = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Desktop Layout - Side by Side */}
                       <div className="hidden lg:flex items-stretch pt-14 flex-row">
-                        {/* Image Side */}
+                        {/* Image Side (Desktop) */}
                         <div
                           className="w-1/2 pr-8 cursor-pointer"
                           onClick={() => setSelectedStory(story)}
                         >
                           {story.story_images && story.story_images.length > 0 ? (
-                            <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-lg group">
-                              <img
-                                src={story.story_images[0]}
-                                alt={`Foto kenangan dari ${story.author}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-                                  Lihat Detail
-                                </span>
+                            <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-lg group bg-black/5">
+                              {/* Sliding Container */}
+                              <div
+                                className="flex h-full transition-transform duration-500 ease-in-out"
+                                style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                              >
+                                {story.story_images.map((imgUrl, idx) => (
+                                  <div key={idx} className="min-w-full h-full relative">
+                                    <img
+                                      src={imgUrl}
+                                      alt={`Foto kenangan dari ${story.author} - ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ))}
                               </div>
-                              {story.story_images.length > 1 && (
-                                <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-                                  +{story.story_images.length - 1} foto lainnya
-                                </div>
+
+                              {/* Sliding Controls Desktop */}
+                              {hasMultipleImages && (
+                                <>
+                                  <button
+                                    onClick={(e) => handlePrevImage(e, String(story.id), story.story_images!.length)}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 z-20"
+                                  >
+                                    <ChevronLeft className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleNextImage(e, String(story.id), story.story_images!.length)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 z-20"
+                                  >
+                                    <ChevronRight className="w-5 h-5" />
+                                  </button>
+
+                                  {/* Dots Indicator Desktop */}
+                                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                                    {story.story_images.map((_, idx) => (
+                                      <div
+                                        key={idx}
+                                        className={`w-2 h-2 rounded-full transition-all shadow-sm ${idx === currentImageIndex ? "bg-white scale-125" : "bg-white/60 hover:bg-white"
+                                          }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </>
                               )}
                             </div>
                           ) : (
@@ -643,7 +730,7 @@ const MemorialStory = () => {
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Content Side */}
                         <div
                           className="w-1/2 pl-8 cursor-pointer"
@@ -672,23 +759,22 @@ const MemorialStory = () => {
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* Story Content */}
                             <p className="font-body text-foreground/90 leading-relaxed line-clamp-6">
                               {story.content}
                             </p>
-                            
+
                             {/* Action Icons with Counts */}
                             <div className="mt-4 pt-4 border-t flex items-center justify-between">
                               <div className="flex items-center gap-4">
                                 <button
                                   onClick={(e) => handleLikeStory(e, String(story.id))}
                                   disabled={likingStory === String(story.id)}
-                                  className={`flex items-center gap-1.5 transition-colors ${
-                                    likedStories.has(String(story.id)) 
-                                      ? 'text-red-500' 
-                                      : 'text-muted-foreground hover:text-red-500'
-                                  }`}
+                                  className={`flex items-center gap-1.5 transition-colors ${likedStories.has(String(story.id))
+                                    ? 'text-red-500'
+                                    : 'text-muted-foreground hover:text-red-500'
+                                    }`}
                                 >
                                   <Heart className={`w-5 h-5 ${likedStories.has(String(story.id)) ? 'fill-current' : ''}`} />
                                   <span className="text-sm font-medium">{story.likes_count || 0}</span>
